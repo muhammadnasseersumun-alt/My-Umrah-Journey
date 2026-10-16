@@ -2,7 +2,9 @@
     <style name="Theme.MyUmrahJourney" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary_color</item>
         <item name="colorPrimaryVariant">@color/primary_dark_color</item>
+        <item name="colorSecondary">@color/primary_color</item>
         <item name="android:statusBarColor">@color/primary_dark_color</item>
+        <item name="android:windowBackground">@color/surface_color</item>
         <item name="android:navigationBarColor">@color/surface_color</item>
     </style>
 </resources>

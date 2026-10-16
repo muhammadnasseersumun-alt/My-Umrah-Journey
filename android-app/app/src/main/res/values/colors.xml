@@ -3,4 +3,9 @@
     <color name="primary_color">#195b4d</color>
     <color name="primary_dark_color">#0e3e34</color>
     <color name="surface_color">#f7f1e6</color>
+    <color name="header_bg">#f0e6d8</color>
+    <color name="text_primary">#1b2a2d</color>
+    <color name="text_secondary">#586b6d</color>
+    <color name="secondary_button">#eaf4f2</color>
+    <color name="tag_bg">#e7d8b1</color>
 </resources>
