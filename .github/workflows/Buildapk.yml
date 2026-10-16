@@ -83,37 +83,3 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-**Important:** This workflow assumes your project is a native Android Gradle project stored in `android-app`. It checks for the necessary files rather than creating a missing Android project.
-
-## Step 2 — Save the workflow
-
-1. Scroll down on GitHub.
-2. Tap **Commit changes**.
-3. Confirm the commit to the `main` branch.
-
-GitHub should automatically start a new build.
-
-## Step 3 — Download your APK
-
-Open:
-
-**[My Umrah Journey — GitHub Actions](https://github.com/muhammadnasseersumun-alt/My-Umrah-Journey/actions)**
-
-Then:
-
-1. Open the latest workflow run.
-2. Wait for the green tick.
-3. Scroll down to **Artifacts**.
-4. Download `My-Umrah-Journey-APK`.
-5. Extract the downloaded ZIP file.
-6. Install `app-debug.apk` on your Android phone.
-
----
-
-## If the build still fails
-
-The workflow fixes the SDK setup configuration, but the complete build can still fail if the project has missing files, incompatible Gradle settings, or other errors.
-
-**If you see another red error, send me the error message.** We can then correct the actual problem.
-
-One important distinction: this workflow builds an APK from your existing source code. It does not create all the Umrah Journey game features from scratch, and I cannot claim the APK is error-free until the build succeeds.
