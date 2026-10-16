@@ -1,85 +1,84 @@
 name: Build My Umrah Journey APK
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 45
 
     steps:
-      # 1. Download project source code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install Java
-      - name: Set up JDK 17
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
-      # 3. Configure Gradle caching
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      # 4. Configure Android SDK
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          accept-android-sdk-licenses: 'true'
-          log-accepted-android-sdk-licenses: 'false'
-
-      # 5. Verify Android SDK
-      - name: Verify Android SDK
+      - name: Verify website files
         run: |
-          echo "Android SDK: $ANDROID_HOME"
-          sdkmanager --version
-          adb version
+          test -f index.html
+          test -f styles.css
+          test -f script.js
 
-      # 6. Check Android project files
-      - name: Check Android project
+      - name: Prepare Capacitor project
         run: |
-          test -f android-app/gradlew || {
-            echo "ERROR: android-app/gradlew is missing."
-            exit 1
+          mkdir -p www
+          cp index.html styles.css script.js www/
+
+          cat > package.json <<'EOF'
+          {
+            "name": "my-umrah-journey",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/core": "6.2.1",
+              "@capacitor/android": "6.2.1"
+            },
+            "devDependencies": {
+              "@capacitor/cli": "6.2.1"
+            }
           }
+          EOF
 
-          test -f android-app/settings.gradle -o \
-               -f android-app/settings.gradle.kts || {
-            echo "ERROR: Gradle settings file is missing."
-            exit 1
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.myumrahjourney.app",
+            "appName": "My Umrah Journey",
+            "webDir": "www",
+            "bundledWebRuntime": false
           }
+          EOF
 
-          test -f android-app/app/build.gradle -o \
-               -f android-app/app/build.gradle.kts || {
-            echo "ERROR: Android app build file is missing."
-            exit 1
-          }
+          npm install --no-audit --no-fund
+          npx cap add android
+          npx cap sync android
 
-      # 7. Make Gradle executable
-      - name: Grant Gradle permissions
-        run: chmod +x android-app/gradlew
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
 
-      # 8. Build debug APK
-      - name: Build Debug APK
-        working-directory: android-app
-        run: ./gradlew --no-daemon assembleDebug
-
-      # 9. Upload APK for download
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: My-Umrah-Journey-APK
-          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
 
