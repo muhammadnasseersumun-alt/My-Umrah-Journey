@@ -17,68 +17,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Verify website files
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Verify Android project files
         run: |
-          test -f index.html
-          test -f styles.css
-          test -f script.js
+          test -f android-app/settings.gradle.kts
+          test -f android-app/build.gradle.kts
+          test -f android-app/app/build.gradle.kts
+          test -f android-app/app/src/main/AndroidManifest.xml
 
-      - name: Prepare Capacitor project
+      - name: Generate Gradle wrapper if missing
+        working-directory: android-app
+        shell: bash
         run: |
-          mkdir -p www
-          cp index.html styles.css script.js www/
-
-          cat > package.json <<'EOF'
-          {
-            "name": "my-umrah-journey",
-            "version": "1.0.0",
-            "private": true,
-            "dependencies": {
-              "@capacitor/core": "6.2.1",
-              "@capacitor/android": "6.2.1"
-            },
-            "devDependencies": {
-              "@capacitor/cli": "6.2.1"
-            }
-          }
-          EOF
-
-          cat > capacitor.config.json <<'EOF'
-          {
-            "appId": "com.myumrahjourney.app",
-            "appName": "My Umrah Journey",
-            "webDir": "www",
-            "bundledWebRuntime": false
-          }
-          EOF
-
-          npm install --no-audit --no-fund
-          npx cap add android
-          npx cap sync android
-
-      - name: Build APK
-        run: |
-          cd android
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.7
+          fi
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
 
-      - name: Upload APK
+      - name: Build debug APK
+        working-directory: android-app
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: My-Umrah-Journey-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: My-Umrah-Journey-Debug-APK
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
-
-
