@@ -17,6 +17,13 @@ id:{tagline:'Perjalanan 3D Umrah dan Haji Anda',home:'Perjalanan',shop:'Toko',wa
 tr:{tagline:'3D Umre ve Hac yolculuğunuz',home:'Yolculuk',shop:'Dükkan',wallet:'Cüzdan',pack:'Bavul',travel:'Vize ve uçuş',miqat:'Mikat',makkah:'Mekke',hajjDays:'Hac günleri',souks:'Çarşılar',ziyarat:'Ziyaret',locked:'Kilitli',credits:'kredi',start:'Başla',next:'İleri',back:'Geri',buy:'Satın al',bargain:'Pazarlık',send:'Gönder',owned:'Sahip',markDone:'Tamamlandı',yourName:'Adınız',chooseAv:'Avatarınızı seçin',girl:'Kız',boy:'Erkek çocuk',man:'Erkek',woman:'Kadın',umrah:'Umre',hajj:'Hac',begin:'Yolculuğa başla',notice:'İçerik sahih Sünni kaynaklara dayanır ve öğrenme aracıdır. Hükümleri yetkin bir âlimden doğrulayın.',source:'Kaynak',reset:'Baştan başla',tapRecite:'Okumak için dokunun',earned:'kredi kazanıldı',language:'Dil',progress:'İlerleme',nextStep:'Sonraki adım',go:'Git',book:'Rezerve et',confirm:'Onayla',seat:'Koltuk',pass:'Biniş kartı',submit:'Gönder',circuit:'Tur',lap:'Sa’y turu',istilam:'İstilam: işaret edin ve Allahu Ekber deyin',walk:'Yürü',follow:'Beni takip et',throwP:'Taş at',collect:'Taş topla',stay:'Bekle',no3d:'3D ilk seferde internet gerektirir. Yeniden bağlanın ve bu ekranı tekrar açın.',welcome:'Esselamu aleyküm',done:'Bitti',listen:'Dinle',drag:'Etrafa bakmak için sürükleyin'},
 bn:{tagline:'আপনার ৩ডি উমরাহ ও হজ যাত্রা',home:'যাত্রা',shop:'দোকান',wallet:'ওয়ালেট',pack:'ব্যাগ',travel:'ভিসা ও ফ্লাইট',miqat:'মীকাত',makkah:'মক্কা',hajjDays:'হজের দিনসমূহ',souks:'বাজার',ziyarat:'জিয়ারত',locked:'বন্ধ',credits:'ক্রেডিট',start:'শুরু',next:'পরবর্তী',back:'পিছনে',buy:'কিনুন',bargain:'দরদাম',send:'পাঠান',owned:'আছে',markDone:'সম্পন্ন চিহ্নিত করুন',yourName:'আপনার নাম',chooseAv:'আপনার অবতার বেছে নিন',girl:'মেয়ে',boy:'ছেলে',man:'পুরুষ',woman:'নারী',umrah:'উমরাহ',hajj:'হজ',begin:'যাত্রা শুরু করুন',notice:'বিষয়বস্তু নির্ভরযোগ্য সুন্নি সূত্রের ভিত্তিতে এবং শেখার সহায়ক। বিধান কোনো যোগ্য আলেমের কাছে যাচাই করুন।',source:'সূত্র',reset:'আবার শুরু',tapRecite:'পড়তে ট্যাপ করুন',earned:'ক্রেডিট অর্জিত',language:'ভাষা',progress:'অগ্রগতি',nextStep:'পরবর্তী ধাপ',go:'যান',book:'বুক করুন',confirm:'নিশ্চিত করুন',seat:'আসন',pass:'বোর্ডিং পাস',submit:'জমা দিন',circuit:'চক্কর',lap:'দৌড়',istilam:'ইস্তিলাম: ইশারা করে আল্লাহু আকবার বলুন',walk:'হাঁটুন',follow:'আমাকে অনুসরণ',throwP:'কঙ্কর নিক্ষেপ',collect:'কঙ্কর কুড়ান',stay:'অপেক্ষা',no3d:'৩ডি প্রথমবার ইন্টারনেট চায়। আবার সংযুক্ত হয়ে এই পর্দা খুলুন।',welcome:'আসসালামু আলাইকুম',done:'হয়েছে',listen:'শুনুন',drag:'চারপাশ দেখতে টানুন'}
 };
+Object.assign(I18N.en,{world:'Port Louis',talk:'Talk',enter:'Enter'});
+Object.assign(I18N.ar,{world:'بورت لويس',talk:'تحدث',enter:'ادخل'});
+Object.assign(I18N.ur,{world:'پورٹ لوئی',talk:'بات کریں',enter:'داخل ہوں'});
+Object.assign(I18N.fr,{world:'Port-Louis',talk:'Parler',enter:'Entrer'});
+Object.assign(I18N.id,{world:'Port Louis',talk:'Bicara',enter:'Masuk'});
+Object.assign(I18N.tr,{world:'Port Louis',talk:'Konuş',enter:'Gir'});
+Object.assign(I18N.bn,{world:'পোর্ট লুই',talk:'কথা বলুন',enter:'প্রবেশ করুন'});
 let S; // state, defined below
 const t=k=>(I18N[S&&S.lang]&&I18N[S.lang][k])||I18N.en[k]||k;
 const ml=o=>(o&&(o[S.lang]||o.en))||'';
@@ -25,7 +32,7 @@ const ml=o=>(o&&(o[S.lang]||o.en))||'';
 const KEY='my-umrah-journey.v2';
 const DEF=()=>({lang:'en',setup:false,name:'',avatar:'',mode:'umrah',date:'',credits:0,streak:0,last:'',sessions:0,owned:{},packed:{},souk:{},
   passport:{exp:'',nat:'Mauritius'},visa:'',flight:null,seat:'',airport:0,region:'south',flown:false,niyyah:false,talbiyah:0,miqatDone:false,
-  tawafN:0,maqam:0,zamzam:0,saiN:0,halq:false,umrahDone:false,hajjStep:0,hp:{},hajjDone:false,visited:{}});
+  met:{},tawafN:0,maqam:0,zamzam:0,saiN:0,halq:false,umrahDone:false,hajjStep:0,hp:{},hajjDone:false,visited:{}});
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 S=Object.assign(DEF(),load());
@@ -49,7 +56,7 @@ function avatar(k,s){
   else if(k==='woman')b='<circle cx="32" cy="32" r="32" fill="#F1E3C4"/><path d="M10 64c0-13 10-19 22-19s22 6 22 19z" fill="#0E6B52"/><path d="M32 10c-12 0-17 9-17 20 0 9 3 15 6 19h22c3-4 6-10 6-19 0-11-5-20-17-20z" fill="#0E6B52"/>'+face(30,10);
   else if(k==='boy')b='<circle cx="32" cy="32" r="32" fill="#D6E4F0"/><path d="M14 64c0-10 8-15 18-15s18 5 18 15z" fill="#2F5D8A"/>'+face(33,10)+'<path d="M22 31c0-9 4-12 10-12s10 3 10 12c-3-4-6-5-10-5s-7 1-10 5z" fill="#2B1B12"/><path d="M23 25c0-6 4-9 9-9s9 3 9 9z" fill="#FFFFFF" stroke="#9A6A12" stroke-width="1.2"/>';
   else b='<circle cx="32" cy="32" r="32" fill="#F3DCE5"/><path d="M14 64c0-10 8-15 18-15s18 5 18 15z" fill="#B65B7C"/><path d="M32 14c-10 0-14 8-14 17 0 7 2 12 5 16h18c3-4 5-9 5-16 0-9-4-17-14-17z" fill="#C97A98"/>'+face(33,9);
-  return `<svg width="${s}" height="${s}" viewBox="0 0 64 64" role="img" aria-label="${esc(t(k))}">${b}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 64 64" role="img" aria-label="${esc(t(k))}">${b}</svg>`;
 }
 
 /* ================= shop and souk data ================= */
@@ -383,7 +390,7 @@ SCENES.nabawi=function(G){
 };
 
 /* ================= helpers for views ================= */
-S.vdocs=S.vdocs||{};S.hp=S.hp||{};S.souk=S.souk||{};S.visited=S.visited||{};
+S.met=S.met||{};S.vdocs=S.vdocs||{};S.hp=S.hp||{};S.souk=S.souk||{};S.visited=S.visited||{};
 const dots=(n,total)=>'<div class="ring">'+Array.from({length:total},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')+'</div>';
 const srcLine=s=>s?`<div class="src">${esc(t('source'))}: ${esc(s)}</div>`:'';
 const pct=(a,b)=>Math.round(a/b*100);
@@ -402,6 +409,7 @@ function award(n){
 }
 function lockMsg(k){
   if(k==='miqat'&&!(S.flight&&S.seat&&S.visa==='approved'))return 'Get your visa approved, book a flight and choose a seat first.';
+  if(k==='miqat'&&!packedOk())return 'Check-in needs your essentials packed within 23 kg. Open the Pack tab first.';
   if(k==='makkah'&&!S.miqatDone)return 'Reach the Miqat, make your niyyah and recite the talbiyah first.';
   if(k==='hajjDays'&&S.mode!=='hajj')return 'The days of Hajj are for a Hajj journey. Start over and choose Hajj.';
   if(k==='hajjDays'&&!S.umrahDone)return 'Complete the Umrah rites in Makkah first (Tamattu\u2019).';
@@ -410,10 +418,11 @@ function lockMsg(k){
 }
 const lockCard=m=>`<div class="card"><h2>${esc(t('locked'))}</h2><p>${esc(m)}</p></div>`;
 function lockSvg(){return '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7V5a4 4 0 118 0v2h1v8H3V7h1zm2 0h4V5a2 2 0 10-4 0v2z"/></svg>';}
-const TABS=()=>['home','shop','wallet','pack','travel','miqat','makkah'].concat(S.mode==='hajj'?['hajjDays']:[]).concat(['souks','ziyarat']);
+const TABS=()=>['home','world','shop','wallet','pack','travel','miqat','makkah'].concat(S.mode==='hajj'?['hajjDays']:[]).concat(['souks','ziyarat']);
 
 /* ================= Journey ================= */
 const MILES=()=>[
+ ['Meet the Imam and your friends in Port Louis',()=>S.met.imam&&S.met.bilal&&S.met.tariq,'world'],
  ['Earn your first credits',()=>S.sessions>0,'wallet'],
  ['Buy your essentials in the shop',essentialsOk,'shop'],
  ['Pack everything within 23 kg',packedOk,'pack'],
@@ -642,8 +651,200 @@ function vZiyarat(){
   return {scene:()=>'nabawi',panel};
 }
 
+
+/* ================= Port Louis overworld: walk, talk, enter (2D canvas) ================= */
+const WW=1300,WH=900,SEA_Y=800;
+const BUILD=[
+ {id:'home',n:'Home',x:80,y:90,w:170,h:120,wall:'#E9C46A',roof:'#B5523B'},
+ {id:'mosque',n:'Jummah Mosque',x:520,y:60,w:240,h:170,wall:'#F4F1E8',roof:'#2E9D5E'},
+ {id:'market',n:'Central Market',x:960,y:100,w:220,h:130,wall:'#E76F51',roof:'#F4A261'},
+ {id:'agency',n:'Travel Agency',x:120,y:520,w:180,h:120,wall:'#8AB6D6',roof:'#2F5D8A'},
+ {id:'airport',n:'SSR Airport',x:880,y:540,w:300,h:150,wall:'#DADFE3',roof:'#6B7A86'}];
+BUILD.forEach(b=>{b.dx=b.x+b.w/2;b.dy=b.y+b.h;});
+const NPCL=[
+ {id:'imam',n:'Imam Farook',x:585,y:285,body:'#F4F4EF',head:'cap',ph:0},
+ {id:'bilal',n:'Bilal',x:690,y:300,body:'#2F5D8A',head:'hair',ph:1.3},
+ {id:'tariq',n:'Tariq',x:745,y:262,body:'#9A6A12',head:'hair',ph:2.1},
+ {id:'farhan',n:'Uncle Farhan',x:1010,y:272,body:'#B5523B',head:'cap',ph:.7},
+ {id:'amina',n:'Amina',x:255,y:678,body:'#0E6B52',head:'hijab',ph:1.9}];
+const NPCT={
+ imam:{
+  start:{t:'Assalamu alaykum, young traveler! Are you ready for the journey of a lifetime?',o:[['What is the most important preparation?','prep'],['What if I get confused about rulings?','rul'],['Goodbye','end']]},
+  prep:{t:'Sincerity, and seeking forgiveness from those you love. Remember: one Umrah to the next is an expiation for what is between them.',s:'Sahih al-Bukhari 1773; Sahih Muslim 1349',o:[['Thank you, Imam','start'],['Goodbye','end']]},
+  rul:{t:'Keep a reference guide handy, but always consult a qualified scholar for your own situation. The schools of thought can differ on details, so follow your group scholar.',o:[['Thank you, Imam','start'],['Goodbye','end']]}},
+ bilal:{start:{t:'May Allah accept your Umrah! Please make dua for our island and our families when you are in the Haram.',o:[['Insha Allah, I will','end'],['Goodbye','end']]}},
+ tariq:{start:{t:'Do not forget to drink water in the heat, my brother. Wear comfortable sandals and take your time.',o:[['Jazakallahu khayran','end']]}},
+ farhan:{
+  start:{t:'Welcome to the Port Louis market! Ihram cloth, money belts, unscented soap and prayer mats. What do you need?',o:[['Let me see your goods and bargain','end','tab:shop'],['Any advice on bargaining?','tips'],['Goodbye','end']]},
+  tips:{t:'Greet with salaam, say please and thank you, then make a fair offer. Kindness lowers the price, but never below what is fair.',o:[['Show me the goods','end','tab:shop'],['Goodbye','end']]}}
+};
+function npcNode(id,key){
+  if(id==='amina'){
+    const exp=S.passport&&S.passport.exp;let tx,o;
+    if(S.visa==='approved'&&S.flight&&S.seat){tx='Everything is ready. Your boarding pass is issued for your flight from SSR (MRU) to '+S.flight.to+'. Head to the airport gate when your bag is packed.';o=[['Show my boarding pass','end','tab:travel'],['Goodbye','end']];}
+    else if(S.visa==='approved'){tx='Your visa is approved. Let us book your flight from SSR Airport (MRU) to Jeddah and choose a seat.';o=[['Book flight and seat','end','tab:travel'],['Goodbye','end']];}
+    else{tx='Welcome to the agency. I check that your passport is valid for six months after your travel date, then process your visa. '+(exp?'Your passport expires on '+exp+'.':'I do not have your passport expiry yet.');o=[['Start the visa application','end','tab:travel'],['Goodbye','end']];}
+    return {t:tx,o};
+  }
+  const tr=NPCT[id];return tr[key]||tr.start;
+}
+const WS={px:640,py:430,face:1,moving:false,t:0,parts:[],near:null,dlg:null,cw:360,ch:420,dpr:1,joy:null,lastStep:0,nearKey:''};
+const KEYS=new Set();
+if(FAST>1)window.__ws=WS;
+let WRAF=0;
+function vWorld(){
+  return `<div class="card"><div class="row between"><h1>${esc(t('world'))}</h1><span class="tag">Mauritius</span></div>
+  <p class="muted">Drag on the map like a joystick, or use WASD or the arrow keys. Walk up to a person or a door.</p>
+  <div class="worldwrap"><canvas id="world" aria-label="Port Louis map"></canvas></div>
+  <div id="wact" class="row"></div></div><div id="dlg"></div>`;
+}
+function goTab(k){tab=k;render();window.scrollTo(0,0);}
+function enterBuilding(id){
+  if(id==='home'){toast('Home: pack your suitcase');goTab('pack');}
+  else if(id==='mosque'){openDlg('imam','start');}
+  else if(id==='market'){goTab('shop');}
+  else if(id==='agency'){openDlg('amina','start');}
+  else if(id==='airport'){
+    if(S.miqatDone){toast('Alhamdulillah. Continue to the Haram.');goTab('makkah');return;}
+    const lk=lockMsg('miqat');if(lk){toast(lk);return;}
+    goTab('miqat');
+  }
+}
+function openDlg(npc,key){
+  WS.dlg={npc,key};if(S.met){if(['imam','bilal','tariq'].includes(npc)&&!S.met[npc]){S.met[npc]=1;save();}}
+  KEYS.clear();renderDlg();
+}
+function renderDlg(){
+  const el=$('#dlg');if(!el)return;
+  if(!WS.dlg){el.innerHTML='';return;}
+  const n=NPCL.find(x=>x.id===WS.dlg.npc)||{n:'Imam Farook'},node=npcNode(WS.dlg.npc,WS.dlg.key);
+  el.innerHTML=`<div class="card dlg"><span class="tag">${esc(n.n)}</span><p>${esc(node.t)}</p>${node.s?`<div class="src">${esc(t('source'))}: ${esc(node.s)}</div>`:''}<div class="opts">${node.o.map((o,i)=>`<button data-a="dpick" data-v="${i}">${esc(o[0])}</button>`).join('')}</div></div>`;
+}
+function winteract(){
+  if(WS.dlg||!WS.near)return;
+  if(WS.near.type==='npc')openDlg(WS.near.ref.id,'start');else enterBuilding(WS.near.ref.id);
+}
+function startWorld(){
+  const cv=document.getElementById('world');if(!cv)return;
+  cancelAnimationFrame(WRAF);
+  const ctx=cv.getContext('2d');
+  const img=new Image();img.src='data:image/svg+xml;utf8,'+encodeURIComponent(avatar(S.avatar||'man',64));WS.img=img;
+  const size=()=>{const w=Math.max(280,cv.parentElement.clientWidth),h=Math.round(Math.min(520,Math.max(320,innerHeight*.55))),d=Math.min(2,window.devicePixelRatio||1);cv.width=Math.round(w*d);cv.height=Math.round(h*d);cv.style.height=h+'px';WS.cw=w;WS.ch=h;WS.dpr=d;};
+  size();
+  let down=null;
+  cv.addEventListener('pointerdown',e=>{if(WS.dlg)return;try{cv.setPointerCapture(e.pointerId);}catch(_){}const r=cv.getBoundingClientRect();down={x:e.clientX-r.left,y:e.clientY-r.top,moved:0};WS.joy={ox:down.x,oy:down.y,dx:0,dy:0};});
+  cv.addEventListener('pointermove',e=>{if(!down||!WS.joy)return;const r=cv.getBoundingClientRect(),x=e.clientX-r.left-WS.joy.ox,y=e.clientY-r.top-WS.joy.oy,m=Math.hypot(x,y),k=Math.min(1,m/40);down.moved=Math.max(down.moved,m);WS.joy.dx=m>6?x/m*k:0;WS.joy.dy=m>6?y/m*k:0;});
+  const up=()=>{if(down&&down.moved<8)winteract();down=null;WS.joy=null;};
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',()=>{down=null;WS.joy=null;});
+  let last=performance.now();
+  const frame=now=>{
+    if(!document.getElementById('world')||tab!=='world'){WRAF=0;return;}
+    WRAF=requestAnimationFrame(frame);
+    const dt=Math.min(.05,(now-last)/1000);last=now;
+    worldUpdate(dt);worldDraw(ctx);
+  };
+  WRAF=requestAnimationFrame(frame);
+}
+function worldUpdate(dt){
+  WS.t+=dt;
+  let vx=0,vy=0;
+  if(!WS.dlg){
+    if(KEYS.has('a')||KEYS.has('arrowleft'))vx-=1;if(KEYS.has('d')||KEYS.has('arrowright'))vx+=1;
+    if(KEYS.has('w')||KEYS.has('arrowup'))vy-=1;if(KEYS.has('s')||KEYS.has('arrowdown'))vy+=1;
+    if(WS.joy){vx+=WS.joy.dx;vy+=WS.joy.dy;}
+  }
+  const m=Math.hypot(vx,vy);if(m>1){vx/=m;vy/=m;}
+  WS.moving=m>.05;
+  if(WS.moving){
+    if(vx)WS.face=vx>0?1:-1;
+    const sp=190,R=13;
+    let nx=WS.px+vx*sp*dt,ny=WS.py+vy*sp*dt;
+    const hit=(x,y)=>{
+      if(x<R||x>WW-R||y<R+10||y>SEA_Y-R)return true;
+      for(const b of BUILD)if(x>b.x-R&&x<b.x+b.w+R&&y>b.y-R&&y<b.y+b.h+R)return true;
+      for(const n of NPCL)if(Math.hypot(x-n.x,y-n.y)<R+14)return true;
+      return false;};
+    if(!hit(nx,WS.py))WS.px=nx;
+    if(!hit(WS.px,ny))WS.py=ny;
+    if(WS.t-WS.lastStep>.14){WS.lastStep=WS.t;WS.parts.push({x:WS.px-WS.face*6,y:WS.py+6,l:.5});}
+  }
+  for(const p of WS.parts)p.l-=dt;WS.parts=WS.parts.filter(p=>p.l>0);
+  // nearest target
+  let best=null,bd=1e9;
+  for(const n of NPCL){const d=Math.hypot(WS.px-n.x,WS.py-n.y);if(d<72&&d<bd){bd=d;best={type:'npc',ref:n,label:t('talk')+': '+n.n};}}
+  for(const b of BUILD){const d=Math.hypot(WS.px-b.dx,WS.py-(b.dy+8));if(d<66&&d<bd){bd=d;best={type:'door',ref:b,label:t('enter')+': '+b.n};}}
+  if(WS.dlg)best=null;
+  WS.near=best;
+  const key=best?best.type+best.ref.id:'';
+  if(key!==WS.nearKey){WS.nearKey=key;const a=document.getElementById('wact');if(a)a.innerHTML=best?`<button class="btn primary" data-a="winteract">${esc(best.label)}</button>`:`<span class="muted">Walk close to someone or a door.</span>`;}
+}
+function person(ctx,x,y,body,head,t,name,isMe){
+  const bob=Math.sin(t*6)*(isMe&&WS.moving?2.5:1);
+  ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(x,y+8,13,5,0,0,6.3);ctx.fill();
+  ctx.fillStyle=body;ctx.beginPath();ctx.roundRect?ctx.roundRect(x-10,y-22+bob,20,28,8):ctx.rect(x-10,y-22+bob,20,28);ctx.fill();
+  ctx.fillStyle='#D9A878';ctx.beginPath();ctx.arc(x,y-30+bob,9,0,6.3);ctx.fill();
+  if(head==='cap'){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y-33+bob,9,Math.PI,0);ctx.fill();ctx.strokeStyle='#9A6A12';ctx.lineWidth=1;ctx.stroke();}
+  else if(head==='hair'){ctx.fillStyle='#2B1B12';ctx.beginPath();ctx.arc(x,y-33+bob,9,Math.PI,0);ctx.fill();}
+  else if(head==='hijab'){ctx.fillStyle=body;ctx.beginPath();ctx.arc(x,y-30+bob,11,Math.PI*.95,Math.PI*2.05);ctx.fill();ctx.fillRect(x-11,y-30+bob,3,12);ctx.fillRect(x+8,y-30+bob,3,12);}
+  ctx.fillStyle='#2A1D16';ctx.fillRect(x-4,y-31+bob,2,2);ctx.fillRect(x+2,y-31+bob,2,2);
+  if(name){ctx.font='600 11px sans-serif';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.88)';const w=ctx.measureText(name).width+10;ctx.fillRect(x-w/2,y-56+bob,w,15);ctx.fillStyle='#10241D';ctx.fillText(name,x,y-45+bob);}
+}
+function worldDraw(ctx){
+  const {cw,ch,dpr}=WS,zoom=cw/480;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const vw=cw/zoom,vh=ch/zoom;
+  const cx=Math.max(0,Math.min(WW-vw,WS.px-vw/2)),cy=Math.max(0,Math.min(WH-vh,WS.py-vh/2));
+  ctx.fillStyle='#8CC17A';ctx.fillRect(0,0,cw,ch);
+  ctx.save();ctx.scale(zoom,zoom);ctx.translate(-cx,-cy);
+  // far mountains and clouds
+  ctx.fillStyle='#7BA57A';for(const [mx,mh] of[[200,60],[560,45],[1000,70],[1240,50]]){ctx.beginPath();ctx.moveTo(mx-130,40);ctx.lineTo(mx,40-mh);ctx.lineTo(mx+130,40);ctx.fill();}
+  ctx.fillStyle='rgba(255,255,255,.85)';for(let i=0;i<5;i++){const x=((WS.t*12+i*300)%(WW+200))-100,y=18+(i%3)*14;ctx.beginPath();ctx.ellipse(x,y,38,11,0,0,6.3);ctx.ellipse(x+22,y+3,26,9,0,0,6.3);ctx.fill();}
+  // roads
+  ctx.fillStyle='#6E7378';ctx.fillRect(0,320,WW,70);
+  ctx.fillStyle='#F2EFE6';for(let x=10;x<WW;x+=60)ctx.fillRect(x,353,30,4);
+  ctx.fillStyle='#8A8F94';
+  for(const b of BUILD){if(b.dy<320)ctx.fillRect(b.dx-20,b.dy,40,320-b.dy);else ctx.fillRect(b.dx-20,390,40,b.dy-390+8);}
+  // beach and sea
+  ctx.fillStyle='#E8D9A8';ctx.fillRect(0,SEA_Y-18,WW,18);
+  ctx.fillStyle='#2F86C5';ctx.fillRect(0,SEA_Y,WW,WH-SEA_Y);
+  ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;for(let r=0;r<3;r++){ctx.beginPath();for(let x=0;x<=WW;x+=20){const y=SEA_Y+14+r*26+Math.sin(x/38+WS.t*1.6+r)*4;x?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
+  // palms
+  for(const [x,y] of[[40,300],[330,420],[470,700],[760,760],[1230,420],[620,600],[40,720]]){ctx.fillStyle='#8B5E34';ctx.fillRect(x-3,y-34,6,34);ctx.fillStyle='#2E9D5E';for(let a=0;a<6;a++){const an=a/6*6.28+Math.sin(WS.t+x)*.08;ctx.beginPath();ctx.ellipse(x+Math.cos(an)*14,y-36+Math.sin(an)*6,15,4,an,0,6.3);ctx.fill();}}
+  // buildings
+  for(const b of BUILD){
+    ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(b.x+8,b.y+b.h-4,b.w,10);
+    ctx.fillStyle=b.wall;ctx.fillRect(b.x,b.y,b.w,b.h);
+    ctx.fillStyle=b.roof;ctx.fillRect(b.x-6,b.y-14,b.w+12,22);
+    ctx.fillStyle='#3a2a1c';ctx.fillRect(b.dx-14,b.dy-34,28,34);
+    ctx.fillStyle='#BFE3F5';for(let i=0;i<3;i++)if(Math.abs(b.x+24+i*(b.w-48)/2-b.dx)>30)ctx.fillRect(b.x+16+i*(b.w-48)/2,b.y+26,24,24);
+    if(b.id==='mosque'){ctx.fillStyle='#2E9D5E';ctx.beginPath();ctx.arc(b.dx,b.y-6,40,Math.PI,0);ctx.fill();ctx.fillStyle='#C9A227';ctx.fillRect(b.dx-1.5,b.y-62,3,18);ctx.fillStyle='#F4F1E8';ctx.fillRect(b.x-26,b.y-70,18,150);ctx.fillRect(b.x+b.w+8,b.y-70,18,150);ctx.fillStyle='#C9A227';ctx.beginPath();ctx.moveTo(b.x-26,b.y-70);ctx.lineTo(b.x-17,b.y-92);ctx.lineTo(b.x-8,b.y-70);ctx.fill();ctx.beginPath();ctx.moveTo(b.x+b.w+8,b.y-70);ctx.lineTo(b.x+b.w+17,b.y-92);ctx.lineTo(b.x+b.w+26,b.y-70);ctx.fill();}
+    if(b.id==='market'){for(let i=0;i<5;i++){ctx.fillStyle=i%2?'#fff':'#E63946';ctx.fillRect(b.x+i*(b.w/5),b.y+b.h-6,b.w/5,16);}}
+    if(b.id==='airport'){ctx.fillStyle='#fff';const px=b.x+b.w-60+Math.sin(WS.t)*6,py=b.y-26;ctx.beginPath();ctx.ellipse(px,py,34,7,0,0,6.3);ctx.fill();ctx.fillRect(px-6,py-14,12,28);ctx.fillStyle='#2F5D8A';ctx.fillRect(px-30,py-3,10,5);}
+    ctx.font='700 13px sans-serif';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.92)';const w=ctx.measureText(b.n).width+14;ctx.fillRect(b.dx-w/2,b.y+b.h+10,w,18);ctx.fillStyle='#10241D';ctx.fillText(b.n,b.dx,b.y+b.h+23);
+    ctx.fillStyle='rgba(255,213,74,'+(.35+.25*Math.sin(WS.t*3))+')';ctx.beginPath();ctx.arc(b.dx,b.dy+8,16,0,6.3);ctx.fill();
+  }
+  // people sorted by y
+  const list=NPCL.map(n=>({y:n.y,f:()=>person(ctx,n.x,n.y,n.body,n.head,WS.t+n.ph,n.n,false)})).concat([{y:WS.py,f:()=>{
+    for(const p of WS.parts){ctx.fillStyle='rgba(180,160,120,'+p.l+')';ctx.beginPath();ctx.arc(p.x,p.y,3+ (0.5-p.l)*6,0,6.3);ctx.fill();}
+    const mb=({man:'#F4F4EF',boy:'#2F5D8A',woman:'#0E6B52',girl:'#B65B7C'})[S.avatar||'man'],bob=Math.sin(WS.t*10)*(WS.moving?2.5:.8);
+    ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(WS.px,WS.py+8,14,5,0,0,6.3);ctx.fill();
+    ctx.fillStyle=mb;ctx.beginPath();ctx.rect(WS.px-10,WS.py-20+bob,20,26);ctx.fill();
+    if(WS.img&&WS.img.complete&&WS.img.naturalWidth){ctx.save();ctx.beginPath();ctx.arc(WS.px,WS.py-30+bob,16,0,6.3);ctx.clip();ctx.drawImage(WS.img,WS.px-16,WS.py-46+bob,32,32);ctx.restore();}
+    else{ctx.fillStyle='#D9A878';ctx.beginPath();ctx.arc(WS.px,WS.py-30+bob,12,0,6.3);ctx.fill();}
+    ctx.strokeStyle='#FFD54A';ctx.lineWidth=2;ctx.beginPath();ctx.arc(WS.px,WS.py-30+bob,16,0,6.3);ctx.stroke();
+    ctx.font='700 11px sans-serif';ctx.textAlign='center';ctx.fillStyle='rgba(255,213,74,.95)';const nm=S.name||'You',w=ctx.measureText(nm).width+10;ctx.fillRect(WS.px-w/2,WS.py-70+bob,w,15);ctx.fillStyle='#10241D';ctx.fillText(nm,WS.px,WS.py-59+bob);
+  }}]);
+  list.sort((a,b)=>a.y-b.y).forEach(o=>o.f());
+  // speech bubble over the target
+  if(WS.near){const r=WS.near.ref,bx=WS.near.type==='npc'?r.x:r.dx,by=(WS.near.type==='npc'?r.y-78:r.dy-52)+Math.sin(WS.t*4)*3,txt=WS.near.type==='npc'?t('talk'):t('enter');
+    ctx.font='700 12px sans-serif';ctx.textAlign='center';const w=ctx.measureText(txt).width+18;ctx.fillStyle='#fff';ctx.strokeStyle='#0E6B52';ctx.lineWidth=2;ctx.beginPath();ctx.rect(bx-w/2,by-16,w,22);ctx.fill();ctx.stroke();ctx.fillStyle='#0E6B52';ctx.fillText(txt,bx,by);}
+  ctx.restore();
+  // joystick overlay (screen space)
+  if(WS.joy){const j=WS.joy;ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(j.ox,j.oy,40,0,6.3);ctx.stroke();ctx.fillStyle='rgba(255,255,255,.6)';ctx.beginPath();ctx.arc(j.ox+j.dx*40,j.oy+j.dy*40,16,0,6.3);ctx.fill();}
+}
+
 /* ================= render and events ================= */
-const VIEWS={home:vHome,shop:vShop,wallet:vWallet,pack:vPack,travel:vTravel,miqat:vMiqat,makkah:vMakkah,hajjDays:vHajj,souks:vSouks,ziyarat:vZiyarat};
+const VIEWS={home:vHome,world:vWorld,shop:vShop,wallet:vWallet,pack:vPack,travel:vTravel,miqat:vMiqat,makkah:vMakkah,hajjDays:vHajj,souks:vSouks,ziyarat:vZiyarat};
 function rail(){
   $('#rail').innerHTML=TABS().map(k=>`<button data-a="tab" data-v="${k}" aria-current="${tab===k}">${esc(t(k))}${lockMsg(k)?lockSvg():''}</button>`).join('');
 }
@@ -669,6 +870,7 @@ function render(){
     stop3D();$('#view').innerHTML=v;
     const c=$('#chat');if(c)c.scrollTop=c.scrollHeight;
     if(tab==='travel')advanceVisa();
+    if(tab==='world'){startWorld();renderDlg();}
     return;
   }
   stop3D();
@@ -681,7 +883,7 @@ const A={
  tab(el){tab=el.dataset.v;render();},
  av(el){S.avatar=el.dataset.v;save();render();},
  mode(el){S.mode=el.dataset.v;save();render();},
- setup(){const nm=($('#nm').value||'').trim();if(!nm||!S.avatar){toast(t('yourName')+' + '+t('chooseAv'));return;}S.name=nm;S.date=$('#dt').value||'';S.setup=true;save();render();},
+ setup(){chime(1,.01);const nm=($('#nm').value||'').trim();if(!nm||!S.avatar){toast(t('yourName')+' + '+t('chooseAv'));return;}S.name=nm;S.date=$('#dt').value||'';S.setup=true;save();render();},
  reset(el){if(el.dataset.c){const lang=S.lang;S=Object.assign(DEF(),{lang});S.vdocs={};BG=null;REC=null;FL={from:'Port Louis',to:'Jeddah (JED)',date:'',res:null};tab='home';save();render();}else{el.dataset.c=1;el.textContent=t('reset')+'?';}},
  /* shop */
  buy(el){const id=el.dataset.v,it=ITEMS[id];if(S.credits<it.p){toast('Not enough credits. Recite in the Wallet to earn more.');return;}S.credits-=it.p;if(it.z==='home')S.owned[id]=1;else S.souk[id]=(S.souk[id]||0)+1;save();chime(520,.2);toast(it.n);render();},
@@ -754,6 +956,8 @@ const A={
    d[idx]++;S.hp[st.id]=d;CT.busy=false;chime(300,.1);buzz(25);speak('اللَّهُ أَكْبَرُ');save();panelRefresh();
  },
  hnext(){S.hajjStep++;if(S.hajjStep>=HJ.length){S.hajjStep=HJ.length-1;S.hajjDone=true;toast('Hajj complete');chime(880,.5);}save();render();},
+ winteract(){winteract();},
+ dpick(el){const node=npcNode(WS.dlg.npc,WS.dlg.key),o=node.o[+el.dataset.v];if(!o)return;const act=o[2];if(o[1]==='end')WS.dlg=null;else WS.dlg.key=o[1];renderDlg();if(act&&act.startsWith('tab:'))goTab(act.slice(4));else rail();},
  visit(el){const id=el.dataset.v;S.visited[id]=!S.visited[id];save();panelRefresh();rail();}
 };
 function speechCancel(){try{speechSynthesis.cancel();}catch(e){}}
@@ -774,7 +978,16 @@ document.addEventListener('change',e=>{
   else if(a==='hc'){S.hp[el.dataset.s]=el.checked;save();panelRefresh();}
 });
 document.addEventListener('input',e=>{if(e.target.id==='nm')S.name=e.target.value;});
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='msg'){e.preventDefault();A.send();}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.id==='msg'){e.preventDefault();A.send();return;}
+  if(tab!=='world'||/INPUT|SELECT|TEXTAREA/.test((e.target.tagName||'')))return;
+  const k=e.key.toLowerCase();
+  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){KEYS.add(k);e.preventDefault();}
+  else if((k===' '||k==='enter')&&!WS.dlg&&WS.near){e.preventDefault();winteract();}
+});
+document.addEventListener('keyup',e=>{KEYS.delete(e.key.toLowerCase());});
+window.addEventListener('blur',()=>KEYS.clear());
+document.addEventListener('click',()=>{try{if(AC&&AC.state==='suspended')AC.resume();}catch(_){}} ,true);
 
 if(!I18N[S.lang])S.lang='en';
 render();

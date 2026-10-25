@@ -93,3 +93,10 @@ main{display:flex;flex-direction:column;gap:12px;min-width:0}
 .foot{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
 .pad{padding:16px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.worldwrap{border-radius:12px;overflow:hidden;background:#8CC17A;touch-action:none}
+#world{display:block;width:100%;touch-action:none;cursor:grab;outline:none}
+#wact{min-height:44px}
+.dlg p{font-size:1.05rem}
+#view>*{animation:fadein .3s ease both}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
