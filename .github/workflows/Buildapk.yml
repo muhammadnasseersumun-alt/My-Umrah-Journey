@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -53,3 +53,14 @@ jobs:
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Commit APK to the repository
+        run: |
+          mkdir -p dist
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk dist/My-Umrah-Journey-debug.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/My-Umrah-Journey-debug.apk
+          git commit -m "Add built debug APK [skip ci]" || echo "no change"
+          git pull --rebase origin main || true
+          git push origin HEAD:main
