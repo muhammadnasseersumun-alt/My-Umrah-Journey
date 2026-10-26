@@ -18,7 +18,7 @@ class TtsBridge(context: Context) : TextToSpeech.OnInitListener {
 
     /** Returns true when a voice for the language was found and speech started. */
     @JavascriptInterface
-    fun speak(text: String, lang: String, rate: Double): Boolean {
+    fun speak(text: String, lang: String, rate: Double, pitch: Double): Boolean {
         if (!ready || text.isBlank()) return false
         val wanted = Locale.forLanguageTag(lang)
         var result = tts.setLanguage(wanted)
@@ -29,6 +29,7 @@ class TtsBridge(context: Context) : TextToSpeech.OnInitListener {
             return false
         }
         tts.setSpeechRate(rate.toFloat().coerceIn(0.3f, 2.0f))
+        tts.setPitch(pitch.toFloat().coerceIn(0.5f, 2.0f))
         val body = if (text.length > 3500) text.substring(0, 3500) else text
         tts.speak(body, TextToSpeech.QUEUE_FLUSH, null, "u" + System.nanoTime())
         return true

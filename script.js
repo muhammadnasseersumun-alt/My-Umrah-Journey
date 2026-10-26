@@ -24,6 +24,7 @@ Object.assign(I18N.fr,{world:'Port-Louis',talk:'Parler',enter:'Entrer',guide:'Ap
 Object.assign(I18N.id,{world:'Port Louis',talk:'Bicara',enter:'Masuk',guide:'Belajar'});
 Object.assign(I18N.tr,{world:'Port Louis',talk:'Konuş',enter:'Gir',guide:'Öğren'});
 Object.assign(I18N.bn,{world:'পোর্ট লুই',talk:'কথা বলুন',enter:'প্রবেশ করুন',guide:'শিখুন'});
+I18N.mfe={tagline:'Ou vwayaz 3D pou Umra ek Hajj',home:'Vwayaz',shop:'Laboutik',wallet:'Portmone',pack:'Valiz',travel:'Viza ek avion',miqat:'Miqat',makkah:'Lamek',hajjDays:'Zour Hajj',souks:'Bazar',ziyarat:'Ziyarat',locked:'Bloke',credits:'kredi',start:'Komans',next:'Apre',back:'Retour',buy:'Aste',bargain:'Marsande',send:'Avoy',owned:'Ou ena',markDone:'Marke fini',yourName:'Ou nom',chooseAv:'Swazir ou avatar',girl:'Tifi',boy:'Garson',man:'Zom',woman:'Fam',umrah:'Umra',hajj:'Hajj',begin:'Komans vwayaz la',notice:'Kontenu la swiv sours Sunnit otantik e se enn zouti pou aprann. Verifie ou regleman ek enn ulama kalifie.',source:'Sours',reset:'Rekomans',tapRecite:'Tap pou resite',earned:'kredi gagne',language:'Lang',progress:'Progre',nextStep:'Prosin etap',go:'Ale',book:'Rezerve',confirm:'Konfirme',seat:'Plas',pass:'Karte bordaz',submit:'Soumet',circuit:'Tour',lap:'Tour',istilam:'Istilam: montre ek dir Allahu Akbar',walk:'Marse',follow:'Swiv mwa',throwP:'Zet ti ros',collect:'Ramas ti ros',stay:'Reste',no3d:'3D bizin internet premye fwa. Konekte ankor ek reouver sa paz la.',welcome:'As-salamu alaykum',done:'Fini',listen:'Ekout',drag:'Tras pou get partou',world:'Por Lwi',talk:'Koz',enter:'Antre',guide:'Aprann'};
 let S; // state, defined below
 const t=k=>(I18N[S&&S.lang]&&I18N[S.lang][k])||I18N.en[k]||k;
 const ml=o=>(o&&(o[S.lang]||o.en))||'';
@@ -45,20 +46,30 @@ let VOICES=[];
 function loadVoices(){try{VOICES=speechSynthesis.getVoices()||[];}catch(e){}}
 try{if('speechSynthesis' in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}}catch(e){}
 const LOCS={en:'en-GB',ar:'ar-SA',ur:'ur-PK',fr:'fr-FR',id:'id-ID',tr:'tr-TR',bn:'bn-BD'};
-function pickVoice(lang){const l=String(lang).toLowerCase().replace('_','-'),p=l.split('-')[0];
+const MALE_RE=/\b(male|david|george|james|daniel|mark|guy|ryan|thomas|paul|alex|fred|oliver|arthur|aaron|ravi|hemant|hamed|maged|majed|tarik|naayf|bassel|mohamed|pablo|jorge|diego|luca|claude|antoine|henri|yannick|andika|cem|tolga|rishi|prabhat|google uk english male)\b/i;
+const FEM_RE=/(female|zira|susan|hazel|samantha|karen|moira|tessa|fiona|victoria|amelie|hortense|julie|ioana|zeina|salma|laila|amira|emel|ayse|gul|dewi|damayanti|kalpana|heera|lekha|sangeeta|mona)/i;
+function pickVoice(lang,gender){
+  const l=String(lang).toLowerCase().replace('_','-'),p=l.split('-')[0];
   const vs=VOICES.filter(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith(p));
-  return vs.find(v=>v.lang.toLowerCase().replace('_','-')===l&&v.localService)||vs.find(v=>v.lang.toLowerCase().replace('_','-')===l)||vs[0]||null;}
-function speak(txt,lang,rate){
+  const gm=v=>gender==='f'?(FEM_RE.test(v.name)&&!/\bmale\b/i.test(v.name.replace(/female/i,''))):(MALE_RE.test(v.name)&&!FEM_RE.test(v.name));
+  const exact=vs.filter(v=>v.lang.toLowerCase().replace('_','-')===l);
+  const pool=[exact,vs];
+  for(const g of pool){const m=g.find(v=>gm(v)&&v.localService)||g.find(gm);if(m)return {v:m,match:true};}
+  const any=exact.find(v=>v.localService)||exact[0]||vs[0]||null;
+  return {v:any,match:false};
+}
+function speak(txt,lang,rate,gender){
   try{
-    if(!txt)return;txt=String(txt);
+    if(!txt)return;txt=String(txt);gender=gender||'m';
     lang=lang||(/[\u0600-\u06FF]/.test(txt)?'ar-SA':(LOCS[S.lang]||'en-GB'));
     rate=rate||(lang.startsWith('ar')?.8:.95);
-    if(window.AndroidTTS){try{if(AndroidTTS.speak(txt,lang,rate))return;}catch(e){}}
+    const pitchFor=m=>gender==='f'?(m?1:1.18):(m?1:.78);
+    if(window.AndroidTTS){try{if(AndroidTTS.speak(txt,lang,rate,pitchFor(false)))return;}catch(e){}}
     if(!('speechSynthesis' in window))return;
     speechSynthesis.cancel();
-    const parts=txt.match(/[^.!?۔؟۝]+[.!?۔؟۝]*/g)||[txt],v=pickVoice(lang);
+    const parts=txt.match(/[^.!?۔؟۝]+[.!?۔؟۝]*/g)||[txt],pv=pickVoice(lang,gender),v=pv.v;
     if(!v&&lang.startsWith('ar')&&!speak.warned){speak.warned=1;toast('Install an Arabic voice in your phone Text-to-speech settings for recitation audio.');}
-    parts.forEach(p=>{const u=new SpeechSynthesisUtterance(p.trim());u.lang=lang;if(v)u.voice=v;u.rate=rate;u.pitch=1;speechSynthesis.speak(u);});
+    parts.forEach(p=>{const u=new SpeechSynthesisUtterance(p.trim());u.lang=lang;if(v)u.voice=v;u.rate=rate;u.pitch=pitchFor(pv.match);speechSynthesis.speak(u);});
     clearInterval(speak.iv);speak.iv=setInterval(()=>{if(!speechSynthesis.speaking){clearInterval(speak.iv);}else{speechSynthesis.pause();speechSynthesis.resume();}},10000);
   }catch(e){}
 }
@@ -410,6 +421,7 @@ SCENES.nabawi=function(G){
 };
 
 /* ================= helpers for views ================= */
+if(S.dlang===undefined&&!S.setup)S.dlang='mfe';
 S.met=S.met||{};S.guided=S.guided||{};S.vdocs=S.vdocs||{};S.hp=S.hp||{};S.souk=S.souk||{};S.visited=S.visited||{};
 const dots=(n,total)=>'<div class="ring">'+Array.from({length:total},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')+'</div>';
 const srcLine=s=>s?`<div class="src">${esc(t('source'))}: ${esc(s)}</div>`:'';
@@ -642,7 +654,7 @@ function vMakkah(){
       <div class="row"><button class="btn primary" data-a="saiGo"${CT&&CT.busy?' disabled':''}>${esc(t('walk'))}</button><button class="chip" data-a="follow" aria-pressed="${!!(G&&G.follow)}">${esc(t('follow'))}</button></div></div>`;
       CT=ct;
     }else if(st==='halq'){
-      h+=`<div class="card"><h2>Halq or taqsir</h2><p>Men shave the head, which is preferred, or trim the hair evenly. Women trim about a fingertip length from the ends. This completes the Umrah.</p>${srcLine("Qur'an 48:27; Sunan Abi Dawud 1984")}<div class="row"><button class="btn primary" data-a="halq">${esc(t('markDone'))}</button></div></div>`;
+      h+=`<div class="card"><h2>Halq or taqsir</h2><p>Men shave the head, which is preferred, or trim the hair evenly. Women trim about a fingertip length from the ends. This completes the Umrah.</p>${srcLine("Qur'an 48:27; Sunan Abi Dawud 1984")}<div class="row"><button class="btn primary" data-a="barber">✂️ ${esc(tr('Go to the barber'))}</button><button class="btn" data-a="halq">${esc(t('markDone'))}</button></div></div>`;
     }else{
       h+=`<div class="card"><h2>Umrah complete</h2><p>May Allah accept your Umrah.</p><div class="row">${S.mode==='hajj'?`<button class="btn primary" data-a="tab" data-v="hajjDays">${esc(t('hajjDays'))}</button>`:`<button class="btn primary" data-a="tab" data-v="souks">${esc(t('souks'))}</button><button class="btn" data-a="tab" data-v="ziyarat">${esc(t('ziyarat'))}</button>`}</div></div>`;
     }
@@ -871,7 +883,7 @@ const BUILD=[
 BUILD.forEach(b=>{b.dx=b.x+b.w/2;b.dy=b.y+b.h;});
 /* skin tones and looks vary so the crowd feels alive */
 const NPCL=[
- {id:'imam',n:'Imam Irfaan',x:560,y:268,body:'#F4F4EF',head:'cap',skin:'#C9966B',beard:1,ph:0,amp:0},
+ {id:'imam',n:'Imam Irfaan',x:560,y:268,body:'#F4F4EF',head:'amamah',skin:'#C9966B',beard:1,ph:0,amp:0},
  {id:'aman',n:'Aman',x:690,y:292,body:'#2F5D8A',head:'hair',skin:'#D9A878',ph:1.3,amp:26,sp:.5},
  {id:'bill',n:'Bill',x:790,y:262,body:'#6B4E9A',head:'hair',skin:'#E2B58A',ph:2.1,amp:30,sp:.4},
  {id:'jameel',n:'Jameel',x:430,y:292,body:'#1D7A66',head:'cap',skin:'#C28A5E',ph:.5,amp:24,sp:.45},
@@ -885,10 +897,15 @@ const NPCL=[
  {id:'yasin',n:'Yasin',x:760,y:700,body:'#5B8E7D',head:'hair',skin:'#B98055',ph:2.8,amp:30,sp:.36},
  {id:'nabil',n:'Nabil',x:1080,y:440,body:'#7D4E8A',head:'cap',skin:'#E2B58A',ph:.4,amp:34,sp:.34},
  {id:'sofiyan',n:'Sofiyan',x:1000,y:620-30,body:'#3A7CA5',head:'hair',skin:'#C28A5E',ph:1.9,amp:28,sp:.4},
+ {id:'bilal',n:'Bilal',x:250,y:440,body:'#E76F51',head:'hair',skin:'#C28A5E',ph:.6,amp:30,sp:.4},
+ {id:'azhar',n:'Azhar',x:340,y:570,body:'#264653',head:'hair',skin:'#D2A074',beard:1,ph:1.4,amp:20,sp:.45},
+ {id:'imteeaz',n:'Imteeaz',x:700,y:565,body:'#2A9D8F',head:'hair',skin:'#B98055',ph:2.2,amp:34,sp:.32},
+ {id:'ajmal',n:'Ajmal',x:440,y:200,body:'#6D597A',head:'amamah',skin:'#D9A878',beard:1,ph:.3,amp:0},
+ {id:'nasseer',n:'Nasseer',x:860,y:430,body:'#1F6F5B',head:'cap',skin:'#C9966B',beard:1,ph:1.2,amp:26,sp:.4},
  {id:'salim',n:'Uncle Salim',x:1010,y:272,body:'#B5523B',head:'cap',skin:'#C9966B',beard:1,ph:.7,amp:0},
- {id:'amina',n:'Amina',x:255,y:678,body:'#0E6B52',head:'hijab',skin:'#D9A878',ph:1.9,amp:0}];
+ {id:'amina',n:'Amina',x:255,y:678,body:'#0E6B52',head:'hijab',skin:'#D9A878',ph:1.9,amp:0,fem:1}];
 NPCL.forEach(n=>{n.hx=n.x;n.hy=n.y;});
-const FRIENDS=['aman','bill','jameel','farhaan','rayhaan','ridwaan','ayoob','zaheer','imran','hamza','yasin','nabil','sofiyan'];
+const FRIENDS=['aman','bill','jameel','farhaan','rayhaan','ridwaan','ayoob','zaheer','imran','hamza','yasin','nabil','sofiyan','nasseer','bilal','azhar','imteeaz','ajmal'];
 const ok=(a,b)=>[[a,b||'end']];
 const NPCT={
  imam:{
@@ -896,10 +913,14 @@ const NPCT={
   prep:{t:'Sincerity, and making things right with people you may have wronged. Remember: one Umrah to the next is an expiation for what is between them.',s:'Sahih al-Bukhari 1773; Sahih Muslim 1349',o:[['Thank you, Imam Irfaan','start'],['Goodbye','end']]},
   rul:{t:'Keep a reference guide handy, but always consult a qualified scholar for your own situation. The schools of thought can differ on details, so follow your group scholar.',o:[['Thank you, Imam Irfaan','start'],['Goodbye','end']]},
   niy:{t:'Actions are judged by intentions. At the miqat you say in your heart that you intend Umrah for Allah, then you recite the talbiyah: Labbayk Allahumma labbayk.',s:'Sahih al-Bukhari 1; Sahih al-Bukhari 1549',o:[['Thank you, Imam Irfaan','start'],['Goodbye','end']]}},
- aman:{start:{t:'Salaam! I am Aman. Before any trip, the Prophet taught us a travel dua. Say it as you board: Subhana alladhi sakhkhara lana hadha.',s:'Sahih Muslim 1342',o:[['Jazakallahu khayran','end'],['Goodbye','end']]}},
+ aman:{start:{t:'Salaam! I am Aman. Before any trip, the Prophet taught us a travel dua. Say it as you board: Subhana alladhi sakhkhara lana hadha.',s:'Sahih Muslim 1342',o:[['Tell me about hiking and fitness','hike'],['Jazakallahu khayran','end'],['Goodbye','end']]},hike:{t:'Aman the hiker: on the trail to Le Morne, say Allahu Akbar when climbing up and SubhanAllah when coming down. Walk daily, because tawaf and sa\'i are long walks.',s:'Sahih al-Bukhari 2993',o:[['Thank you','start'],['Goodbye','end']]}},
  bill:{start:{t:'Hey, it is Bill! Tie your camel and trust in Allah, my friend: lock your bags, keep your passport safe, then rely on Him.',s:'Jami at-Tirmidhi 2517 (hasan)',o:[['Thank you','end'],['Goodbye','end']]}},
- jameel:{start:{t:'Assalamu alaykum, Jameel here. Allah is beautiful and loves beauty, so keep yourself neat and clean. Pack small, light things.',s:'Sahih Muslim 91',o:[['Insha Allah','end'],['Goodbye','end']]}},
- farhaan:{start:{t:'Farhaan here! After Umrah, do visit Madinah. One prayer in the Prophet\'s mosque is better than a thousand elsewhere, except Masjid al-Haram.',s:'Sahih al-Bukhari 1190; Sahih Muslim 1394',o:[['Insha Allah','end'],['Goodbye','end']]}},
+ jameel:{start:{t:'Assalamu alaykum, Jameel here. Allah is beautiful and loves beauty, so keep yourself neat and clean. Pack small, light things.',s:'Sahih Muslim 91',o:[['Teach me eating manners','eat'],['Insha Allah','end'],['Goodbye','end']]},eat:{t:'Jameel the cook: say Bismillah, eat with your right hand, and eat from what is in front of you. Good briani and dholl puri taste better with gratitude.',s:'Sahih al-Bukhari 5376',o:[['Thank you','start'],['Goodbye','end']]}},
+ farhaan:{start:{t:'Farhaan here! After Umrah, do visit Madinah. One prayer in the Prophet\'s mosque is better than a thousand elsewhere, except Masjid al-Haram.',s:'Sahih al-Bukhari 1190; Sahih Muslim 1394',o:[['Take me fishing tips','fish'],['Insha Allah','end'],['Goodbye','end']]},fish:{t:'Farhaan the fisherman: begin with Bismillah, be patient with the line, and thank Allah for whatever He provides. Fish from the Blue Bay pier at sunrise.',o:[['Thank you','start'],['Goodbye','end']]}},
+ bilal:{start:{t:'Salaam! Bilal here. Naat and cars are my passion. Play some naat while you drive, and lower the exhaust near a masjid so we do not disturb the neighbours.',o:[['Thank you','end'],['Goodbye','end']]}},
+ azhar:{start:{t:'Azhar, your luggage master. Airlines allow 23 kilograms. Pack ihram, sandals, unscented soap and a money belt, and weigh your bag before the airport.',o:[['Thank you','end'],['Goodbye','end']]}},
+ imteeaz:{start:{t:'Imteeaz, captain of the five-a-side team. When the adhan sounds, we stop the match at once and go to pray. Salah comes first.',s:'Quran 4:103',o:[['Insha Allah','end'],['Goodbye','end']]}},
+ ajmal:{start:{t:'Ajmal here, I study the Quran. Ask me for a story: Yunus in the whale, or Hajar at Zamzam.',o:[['The story of Yunus','yunus'],['The story of Hajar at Zamzam','hajar'],['Goodbye','end']]},yunus:{t:'Yunus called out in the darkness: La ilaha illa anta, subhanaka, inni kuntu minaz-zalimin. Allah answered him and saved him from distress.',s:'Quran 21:87-88',o:[['Thank you','start'],['Goodbye','end']]},hajar:{t:'Hajar ran between Safa and Marwa looking for water for her son Ismail. Allah brought out Zamzam, and we remember her in the sa\'i.',s:'Sahih al-Bukhari 3364',o:[['Thank you','start'],['Goodbye','end']]}},
  rayhaan:{start:{t:'Rayhaan! Remember, in ihram men wear two plain white unsewn cloths. No shirts, and no perfume once you have made the intention.',s:'Sahih al-Bukhari 1542',o:[['Thank you','end'],['Goodbye','end']]}},
  ridwaan:{start:{t:'Ridwaan speaking. Hajj is a duty owed to Allah by those who are able to make the journey. Prepare well and begin early.',s:'Quran 3:97',o:[['Insha Allah','end'],['Goodbye','end']]}},
  ayoob:{start:{t:'Ayoob, at your service. Be patient like the Prophet Ayyub. Crowds and heat are tests, and patience brings ease.',s:'Quran 21:83-84',o:[['Jazakallahu khayran','end'],['Goodbye','end']]}},
@@ -909,6 +930,7 @@ const NPCT={
  yasin:{start:{t:'Yasin here. Drink Zamzam in Makkah with a good intention. It is for whatever it is drunk for.',s:'Sunan Ibn Majah 3062',o:[['Insha Allah','end'],['Goodbye','end']]}},
  nabil:{start:{t:'Nabil! After tawaf, pray two rakahs behind the Maqam of Ibrahim. Take your time and do not push anyone.',s:'Quran 2:125',o:[['Thank you','end'],['Goodbye','end']]}},
  sofiyan:{start:{t:'Sofiyan! When you finish Umrah, men shave or trim the hair. The Prophet prayed for those who shave, and also for those who trim.',s:'Sahih al-Bukhari 1727',o:[['Jazakallahu khayran','end'],['Goodbye','end']]}},
+ nasseer:{start:{t:'Assalamu alaykum, Nasseer here! Learn wudhu and salah first, then tawaf and sa\'i. Practise each step slowly until it feels easy.',o:[['Show me wudhu and prayer step by step','end','tab:guide'],['Thank you','end'],['Goodbye','end']]}},
  salim:{
   start:{t:'Welcome to the Port Louis market! Ihram cloth, money belts, unscented soap and prayer mats. What do you need?',o:[['Let me see your goods and bargain','end','tab:shop'],['Any advice on bargaining?','tips'],['Goodbye','end']]},
   tips:{t:'Greet with salaam, say please and thank you, then make a fair offer. Kindness lowers the price, but never below what is fair.',o:[['Show me the goods','end','tab:shop'],['Goodbye','end']]}}
@@ -927,7 +949,7 @@ function npcNode(id,key){
 const metFriends=()=>FRIENDS.filter(f=>S.met&&S.met[f]).length;
 const WS={px:640,py:430,face:1,moving:false,t:0,parts:[],near:null,dlg:null,cw:360,ch:420,dpr:1,joy:null,lastStep:0,nearKey:''};
 const KEYS=new Set();
-if(FAST>1)window.__ws=WS;
+if(FAST>1){window.__ws=WS;window.__npc=NPCL;}
 let WRAF=0;
 function vWorld(){
   WS.dlg=null;WS.nearKey='';WS.joy=null;KEYS.clear();
@@ -945,6 +967,7 @@ function enterBuilding(id){
   else if(id==='airport'){
     if(S.miqatDone){toast('Alhamdulillah. Continue to the Haram.');goTab('makkah');return;}
     const lk=lockMsg('miqat');if(lk){toast(lk);return;}
+    if(!S.checkedIn){startCut('checkin',()=>{S.checkedIn=true;save();goTab('miqat');});return;}
     goTab('miqat');
   }
 }
@@ -955,12 +978,13 @@ function openDlg(npc,key){
 }
 const LN={en:'English',ar:'العربية',ur:'اردو',fr:'Français',id:'Bahasa Indonesia',tr:'Türkçe',bn:'বাংলা'};
 const dlSel=()=>`<select data-a="dl" aria-label="${esc(tr('Conversation language'))}">${Object.keys(LN).map(k=>`<option value="${k}"${k===dlang()?' selected':''}>${LN[k]}</option>`).join('')}</select>`;
-function speakNode(){if(!WS.dlg)return;const node=npcNode(WS.dlg.npc,WS.dlg.key);speak(node.t,DLOC[dlang()]||'en-GB',.95);}
+function speakNode(){if(!WS.dlg)return;const node=npcNode(WS.dlg.npc,WS.dlg.key),n=NPCL.find(x=>x.id===WS.dlg.npc);if(WS.dsc){WS.dsc.spk='L';WS.dsc.talkUntil=performance.now()+talkMs(node.t);}speak(node.t,DLOC[dlang()]||'en-GB',.95,n&&n.fem?'f':'m');}
 function renderDlg(say){
   const el=$('#dlg');if(!el)return;
   if(!WS.dlg){el.innerHTML='';speechCancel();return;}
   const n=NPCL.find(x=>x.id===WS.dlg.npc)||{n:'Imam Irfaan'},node=npcNode(WS.dlg.npc,WS.dlg.key);
-  el.innerHTML=`<div class="dlgsheet"><div class="card dlg"><div class="row between"><span class="tag">${esc(n.n)}</span><span class="row">${dlSel()}<button class="chip" data-a="dsay" aria-label="${esc(tr('Listen'))}">🔊 ${esc(tr('Listen'))}</button></span></div><p dir="${RTL.includes(dlang())?'rtl':'ltr'}">${esc(node.t)}</p>${node.s?`<div class="src">${esc(t('source'))}: ${esc(node.s)}</div>`:''}<div class="opts">${node.o.map((o,i)=>`<button data-a="dpick" data-v="${i}">${esc(o[0])}</button>`).join('')}</div></div></div>`;
+  el.innerHTML=`<div class="dlgsheet"><div class="card dlg"><canvas class="dlgcv" id="dlgcv"></canvas><div class="row between"><span class="tag">${esc(n.n)}</span><span class="row">${dlSel()}<button class="chip" data-a="dsay" aria-label="${esc(tr('Listen'))}">🔊 ${esc(tr('Listen'))}</button></span></div><p dir="${RTL.includes(dlang())?'rtl':'ltr'}">${esc(node.t)}</p>${node.s?`<div class="src">${esc(t('source'))}: ${esc(node.s)}</div>`:''}<div class="opts">${node.o.map((o,i)=>`<button data-a="dpick" data-v="${i}">${esc(o[0])}</button>`).join('')}</div></div></div>`;
+  const dsc=dlgScene(WS.dlg.npc);dsc.stop=true;const cv=document.getElementById('dlgcv');if(cv){dsc.stop=false;portraitStart(cv,dsc);}
   if(say)speakNode();
 }
 function winteract(){
@@ -1085,6 +1109,7 @@ function person(ctx,x,y,n,t,isMe){
   ctx.fillStyle=hg;ctx.beginPath();ctx.ellipse(x,hy,13.5,13,0,0,6.3);ctx.fill();
   if(girl){ctx.fillStyle=shade(body,1.15);ctx.beginPath();ctx.ellipse(x,hy-9,16,9,0,Math.PI,0);ctx.fill();ctx.fillRect(x-16,hy-9,5,22);ctx.fillRect(x+11,hy-9,5,22);}
   else if(head==='hair'){ctx.fillStyle='#2B1B12';ctx.beginPath();ctx.ellipse(x,hy-6,14,9,0,Math.PI,0);ctx.fill();ctx.beginPath();ctx.ellipse(x-12,hy,3,6,0,0,6.3);ctx.ellipse(x+12,hy,3,6,0,0,6.3);ctx.fill();}
+  else if(head==='amamah'){ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x,hy-9,15,9,0,Math.PI,0);ctx.fill();ctx.fillStyle='#F1EEE2';ctx.beginPath();ctx.ellipse(x,hy-11,13,5,0,0,6.3);ctx.fill();ctx.strokeStyle='#D8D3C0';ctx.lineWidth=1;for(let i=-2;i<=2;i++){ctx.beginPath();ctx.moveTo(x+i*5-3,hy-17);ctx.quadraticCurveTo(x+i*5,hy-12,x+i*5+3,hy-8);ctx.stroke();}ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(x+10,hy-8);ctx.quadraticCurveTo(x+19,hy,x+13,hy+14);ctx.lineTo(x+9,hy+10);ctx.closePath();ctx.fill();ctx.strokeStyle='#D8D3C0';ctx.stroke();}
   else if(head==='cap'){ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x,hy-8,13,7,0,Math.PI,0);ctx.fill();ctx.strokeStyle='#D8D3C0';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x-13,hy-8);ctx.lineTo(x+13,hy-8);ctx.stroke();ctx.fillStyle='#E7E1CC';for(let i=-3;i<=3;i++){ctx.beginPath();ctx.arc(x+i*3.6,hy-9.5,.9,0,6.3);ctx.fill();}
     if(n.id==='imam'){ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x,hy-11,16,7,0,0,6.3);ctx.fill();ctx.fillStyle='#C9A227';ctx.fillRect(x-15,hy-9,30,2.5);}}
   // face
@@ -1095,8 +1120,16 @@ function person(ctx,x,y,n,t,isMe){
   ctx.fillStyle='#2A1D16';ctx.beginPath();ctx.ellipse(x-5+lookX,ey+.5,2.4,3.2,0,0,6.3);ctx.ellipse(x+5+lookX,ey+.5,2.4,3.2,0,0,6.3);ctx.fill();
   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x-5.8+lookX,ey-1,1,0,6.3);ctx.arc(x+4.2+lookX,ey-1,1,0,6.3);ctx.fill();
   ctx.fillStyle='rgba(240,120,110,.45)';ctx.beginPath();ctx.ellipse(x-8.5,hy+4,3,2,0,0,6.3);ctx.ellipse(x+8.5,hy+4,3,2,0,0,6.3);ctx.fill();
-  ctx.strokeStyle='#8A3A2A';ctx.lineWidth=1.4;ctx.lineCap='round';ctx.beginPath();ctx.arc(x,hy+4,3.4,.15,Math.PI-.15);ctx.stroke();
-  if(n.n){ctx.font='700 11px sans-serif';ctx.textAlign='center';const w=ctx.measureText(n.n).width+14,yy=y-66+bob;ctx.fillStyle='rgba(255,255,255,.94)';ctx.beginPath();ctx.roundRect?ctx.roundRect(x-w/2,yy,w,16,8):ctx.rect(x-w/2,yy,w,16);ctx.fill();ctx.strokeStyle=n.id==='imam'?'#C9A227':'rgba(14,107,82,.5)';ctx.lineWidth=1.3;ctx.stroke();ctx.fillStyle='#10241D';ctx.fillText(n.n,x,yy+12);}
+  {const mood=n.mood||'happy',tk=n.talk?Math.abs(Math.sin(t*14)):0;
+    ctx.strokeStyle='#3A2418';ctx.lineWidth=1.3;ctx.lineCap='round';ctx.beginPath();
+    if(mood==='angry'){ctx.moveTo(x-8,ey-7);ctx.lineTo(x-2,ey-5);ctx.moveTo(x+8,ey-7);ctx.lineTo(x+2,ey-5);}
+    else if(mood==='sad'){ctx.moveTo(x-8,ey-5);ctx.lineTo(x-2,ey-7);ctx.moveTo(x+8,ey-5);ctx.lineTo(x+2,ey-7);}
+    else{ctx.moveTo(x-8,ey-6.5);ctx.quadraticCurveTo(x-5,ey-8.5,x-2,ey-6.5);ctx.moveTo(x+2,ey-6.5);ctx.quadraticCurveTo(x+5,ey-8.5,x+8,ey-6.5);}
+    ctx.stroke();
+    ctx.strokeStyle='#8A3A2A';ctx.lineWidth=1.4;
+    if(tk>.15){ctx.fillStyle='#7A2E22';ctx.beginPath();ctx.ellipse(x,hy+5.5,3.2,1.1+tk*2.8,0,0,6.3);ctx.fill();}
+    else{ctx.beginPath();if(mood==='sad'||mood==='angry')ctx.arc(x,hy+8.5,3.2,Math.PI+.25,Math.PI*2-.25);else if(mood==='neutral'){ctx.moveTo(x-3,hy+6);ctx.lineTo(x+3,hy+6);}else ctx.arc(x,hy+4,mood==='joy'?4.4:3.4,.15,Math.PI-.15);ctx.stroke();}}
+  if(n.n&&!n.noName){ctx.font='700 11px sans-serif';ctx.textAlign='center';const w=ctx.measureText(n.n).width+14,yy=y-66+bob;ctx.fillStyle='rgba(255,255,255,.94)';ctx.beginPath();ctx.roundRect?ctx.roundRect(x-w/2,yy,w,16,8):ctx.rect(x-w/2,yy,w,16);ctx.fill();ctx.strokeStyle=n.id==='imam'?'#C9A227':'rgba(14,107,82,.5)';ctx.lineWidth=1.3;ctx.stroke();ctx.fillStyle='#10241D';ctx.fillText(n.n,x,yy+12);}
 }
 function clayTree(ctx,x,y,s,t){
   ctx.fillStyle='rgba(30,60,40,.22)';ctx.beginPath();ctx.ellipse(x+16*s,y+4,34*s,8*s,0,0,6.3);ctx.fill();
@@ -1301,7 +1334,7 @@ const A={
    },100);
  },
  niyyah(){S.niyyah=true;chime(660,.3);save();render();},
- talb(){if(S.miqatDone)return;S.talbiyah++;chime(560+S.talbiyah*10,.1);buzz(15);if(S.talbiyah>=11){S.miqatDone=true;toast('Talbiyah complete. Continue to Makkah.');}save();render();if(!S.miqatDone)pulse('talbb');},
+ talb(){if(S.miqatDone)return;S.talbiyah++;chime(560+S.talbiyah*10,.1);buzz(15);if(S.talbiyah>=11){S.miqatDone=true;toast('Talbiyah complete. Continue to Makkah.');}save();render();if(S.miqatDone&&!S.arrived)startCut('arrival',()=>{S.arrived=true;save();goTab('makkah');});if(!S.miqatDone)pulse('talbb');},
  talbListen(){speak(D_TALBIYAH.ar);},
  /* makkah */
  istilam(){if(!CT||CT.busy)return;CT.ist=true;chime(500,.15);buzz(30);speak('اللَّهُ أَكْبَرُ');panelRefresh();},
@@ -1443,7 +1476,7 @@ let GNT=[];
 function gspeakSeq(seq){
   GNT.forEach(clearTimeout);GNT=[];speechCancel();let at=0,total=0;
   seq.forEach(s=>{const ms=s.txt.length*(s.lang.startsWith('ar')?125:70)+600;
-    if(!GS.mute)GNT.push(setTimeout(()=>speak(s.txt,s.lang,s.rate),at));at+=ms;total+=ms;});
+    if(!GS.mute)GNT.push(setTimeout(()=>speak(s.txt,s.lang,s.rate,(S.avatar==='woman'||S.avatar==='girl')?'f':'m'),at));at+=ms;total+=ms;});
   return total;
 }
 const gstep=()=>GUIDE[GS.j].steps[GS.i];
@@ -1880,7 +1913,7 @@ function vQuiz(){
   const opts=GM.order||(GM.order=shuf([0,1,2,3]));
   return `<div class="card"><div class="row between"><span class="tag">Question ${GM.i+1} of 3</span><button class="btn" data-a="gend" aria-label="Close">&times;</button></div>
   <div class="bar"><i style="width:${GM.i/3*100}%"></i></div>
-  <h2 dir="${RTL.includes(l)?'rtl':'ltr'}">${esc(q[QI[l]])}</h2>
+  <h2 dir="${RTL.includes(l)?'rtl':'ltr'}">${esc(q.mfe&&l==='mfe'?q.mfe:q[QI[l]])}</h2>
   <div class="opts">${opts.map(oi=>`<button class="${GM.pick<0?'':(oi===q[8]?'qok':(oi===GM.pick?'qbad':''))}" data-a="qpick" data-v="${oi}"${GM.pick>=0?' disabled':''}>${esc(q[7][oi])}</button>`).join('')}</div>
   ${GM.pick>=0?`<div class="row between"><b class="${GM.pick===q[8]?'ok':'bad'}">${GM.pick===q[8]?'Correct! MashaAllah':'Not quite'}</b><button class="btn primary" data-a="qnext">Next</button></div>`:''}
   <div class="row"><span class="muted">Question language:</span>${dlSel()}</div></div>`;
@@ -1986,6 +2019,416 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{KEYS.delete(e.key.toLowerCase());});
 window.addEventListener('blur',()=>KEYS.clear());
 document.addEventListener('click',()=>{try{if(AC&&AC.state==='suspended')AC.resume();}catch(_){}} ,true);
+
+/* ================= immersive scenes: zoomed conversations, bargaining stall, barber, cutscenes ================= */
+const T3=(en,fr,mfe)=>{DT[en]=Object.assign(DT[en]||{},{fr,mfe});};
+const meChar=()=>{const m=({man:['#F4F4EF','amamah'],boy:['#2F5D8A','hair'],woman:['#0E6B52','hijab'],girl:['#B65B7C','hijab']})[S.avatar||'man'];return {id:'me',n:S.name||'You',body:m[0],head:m[1],skin:'#D9A878',beard:S.avatar==='man'?1:0,fem:S.avatar==='woman'||S.avatar==='girl',noName:true};};
+const myGender=()=>meChar().fem?'f':'m';
+const talkMs=txt=>Math.max(1800,String(txt).length*68)/FAST;
+/* ---------- backgrounds ---------- */
+function wallGrad(ctx,w,h,gy,c1,c2){ctx.fillStyle=lg(ctx,0,0,0,gy,[c1,c2]);ctx.fillRect(-w,-h,w*3,gy+h);}
+function floorGrad(ctx,w,h,gy,c1,c2){ctx.fillStyle=lg(ctx,0,gy,0,h*1.3,[c1,c2]);ctx.fillRect(-w,gy,w*3,h);}
+function bgBack(ctx,w,h,kind,t,gy){
+  const k=h/190;
+  if(kind==='street'||kind==='mosque'){
+    ctx.fillStyle=lg(ctx,0,-h,0,gy,['#7EC3EC','#F7D9BE','#FDE9B0']);ctx.fillRect(-w,-h,w*3,gy+h);
+    ctx.fillStyle='rgba(255,255,255,.85)';for(let i=0;i<4;i++){const x=((t*8+i*w*.4)%(w*1.6))-w*.3;ctx.beginPath();ctx.ellipse(x,h*.14+i*8,36*k,10*k,0,0,6.3);ctx.ellipse(x+22*k,h*.15+i*8,24*k,8*k,0,0,6.3);ctx.fill();}
+    for(const [mx,mh,c] of[[w*.1,.3,'#8FB89F'],[w*.5,.22,'#9CC4A8'],[w*.9,.34,'#86B197']]){poly(ctx,[[mx-w*.35,gy],[mx,gy-h*mh],[mx+w*.35,gy]],c);}
+    floorGrad(ctx,w,h,gy,kind==='mosque'?'#E9DFC4':'#8EC47A',kind==='mosque'?'#D8CBA6':'#6FAE5E');
+    if(kind==='mosque'){
+      ctx.fillStyle='#F4F1E8';ctx.fillRect(w*.08,gy-h*.52,w*.84,h*.52);
+      ctx.fillStyle=lg(ctx,0,gy-h*.52,0,gy,['#FFFFFF','#E8E0CC']);ctx.fillRect(w*.08,gy-h*.52,w*.84,h*.52);
+      const dg=ctx.createRadialGradient(w*.45,gy-h*.72,4,w*.5,gy-h*.55,h*.3);dg.addColorStop(0,'#7BE0A8');dg.addColorStop(.6,'#2E9D5E');dg.addColorStop(1,'#17603A');ctx.fillStyle=dg;ctx.beginPath();ctx.arc(w*.5,gy-h*.52,h*.26,Math.PI,0);ctx.fill();
+      ctx.fillStyle='#C9A227';ctx.fillRect(w*.5-1.5,gy-h*.8,3,h*.1);ctx.beginPath();ctx.arc(w*.5,gy-h*.82,5*k,0,6.3);ctx.fill();
+      for(const mx of[w*.02,w*.94]){ctx.fillStyle=lg(ctx,mx,0,mx+w*.05,0,['#fff','#CFC8B0']);ctx.fillRect(mx,gy-h*.85,w*.05,h*.85);ctx.fillStyle='#2E9D5E';ctx.beginPath();ctx.moveTo(mx-3,gy-h*.85);ctx.quadraticCurveTo(mx+w*.025,gy-h*1.0,mx+w*.05+3,gy-h*.85);ctx.fill();}
+      ctx.fillStyle='#164F3C';ctx.beginPath();ctx.moveTo(w*.5-24*k,gy);ctx.lineTo(w*.5-24*k,gy-h*.2);ctx.arc(w*.5,gy-h*.2,24*k,Math.PI,0);ctx.lineTo(w*.5+24*k,gy);ctx.fill();
+      for(const wx of[w*.2,w*.72]){ctx.fillStyle='#164F3C';ctx.beginPath();ctx.moveTo(wx,gy-h*.1);ctx.lineTo(wx,gy-h*.3);ctx.arc(wx+14*k,gy-h*.3,14*k,Math.PI,0);ctx.lineTo(wx+28*k,gy-h*.1);ctx.fill();ctx.fillStyle='rgba(255,213,74,'+(.4+.2*Math.sin(t*2))+')';ctx.fillRect(wx+4*k,gy-h*.3,20*k,h*.2);}
+    }else{
+      for(const [bx,bw,bh,c] of[[w*.02,w*.22,.38,'#E9C46A'],[w*.3,w*.2,.3,'#8AB6D6'],[w*.75,w*.22,.42,'#E76F51']]){ctx.fillStyle=c;ctx.fillRect(bx,gy-h*bh,bw,h*bh);ctx.fillStyle='rgba(0,0,0,.14)';ctx.fillRect(bx,gy-h*bh,bw,8*k);for(let i=0;i<3;i++){ctx.fillStyle='#BFE3F5';ctx.fillRect(bx+10*k+i*bw/3.2,gy-h*bh+20*k,16*k,20*k);}}
+      for(const px of[w*.27,w*.62,w*.96]){ctx.save();ctx.translate(px,gy+6);ctx.scale(k*1.1,k*1.1);palm(ctx,0,0,t);ctx.restore();}
+    }
+  }else if(kind==='stall'){
+    wallGrad(ctx,w,h,gy,'#6B4A2B','#8A6038');
+    ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1.5;for(let x=-w;x<w*2;x+=22*k){ctx.beginPath();ctx.moveTo(x,-h);ctx.lineTo(x,gy);ctx.stroke();}
+    for(let r=0;r<2;r++){const y=gy-h*(.62-r*.24);ctx.fillStyle='#4B3019';ctx.fillRect(-w,y,w*3,5*k);for(let i=0;i<12;i++){const x=-w*.2+i*w*.14;ctx.fillStyle=['#E63946','#F2C94C','#2A9D8F','#fff','#7D4E8A','#2F5D8A'][(i+r)%6];ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y-16*k,18*k,16*k,3):ctx.rect(x,y-16*k,18*k,16*k);ctx.fill();}}
+    for(let i=0;i<6;i++){const x=w*.1+i*w*.17,sw=Math.sin(t*1.6+i)*2;ctx.strokeStyle='#2B1B10';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,-h);ctx.lineTo(x+sw,gy-h*.8);ctx.stroke();const g=ctx.createRadialGradient(x+sw,gy-h*.72,1,x+sw,gy-h*.72,14*k);g.addColorStop(0,'#FFF3B0');g.addColorStop(1,'rgba(255,200,80,0)');ctx.fillStyle=g;ctx.fillRect(x-20*k,gy-h*.9,40*k,40*k);ctx.fillStyle='#E7C25A';ctx.fillRect(x+sw-4*k,gy-h*.76,8*k,10*k);}
+    for(let i=0;i<14;i++){ctx.fillStyle=i%2?'#fff':'#E63946';ctx.beginPath();ctx.moveTo(-w+i*w*.2,-h);ctx.lineTo(-w+(i+1)*w*.2,-h);ctx.lineTo(-w+(i+1)*w*.2-10,gy-h*.9);ctx.lineTo(-w+i*w*.2-10,gy-h*.9);ctx.fill();}
+    floorGrad(ctx,w,h,gy,'#C9A66B','#9A7A45');
+  }else if(kind==='agency'){
+    wallGrad(ctx,w,h,gy,'#CFE4F2','#AFCDE3');
+    ctx.fillStyle='#8AB6D6';ctx.fillRect(w*.08,gy-h*.72,w*.3,h*.38);ctx.fillStyle='#4F9A6A';ctx.beginPath();ctx.ellipse(w*.18,gy-h*.55,w*.05,h*.1,.3,0,6.3);ctx.ellipse(w*.28,gy-h*.5,w*.06,h*.09,-.2,0,6.3);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeRect(w*.08,gy-h*.72,w*.3,h*.38);
+    ctx.fillStyle='#fff';ctx.save();ctx.translate(w*.7,gy-h*.55);ctx.rotate(-.3);ctx.beginPath();ctx.ellipse(0,0,36*k,8*k,0,0,6.3);ctx.fill();ctx.fillRect(-6*k,-18*k,12*k,36*k);ctx.restore();
+    floorGrad(ctx,w,h,gy,'#E6E1D3','#CFC8B4');
+  }else if(kind==='airport'){
+    wallGrad(ctx,w,h,gy,'#DDE8EE','#BFD0DA');
+    ctx.fillStyle=lg(ctx,0,gy-h*.8,0,gy-h*.3,['#9CD3F2','#E3F3FB']);ctx.fillRect(-w*.2,gy-h*.8,w*1.4,h*.5);ctx.strokeStyle='#7A8A94';ctx.lineWidth=3;for(let i=0;i<7;i++){ctx.beginPath();ctx.moveTo(-w*.2+i*w*.2,gy-h*.8);ctx.lineTo(-w*.2+i*w*.2,gy-h*.3);ctx.stroke();}
+    const px=((t*30)%(w*1.6))-w*.3;ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(px,gy-h*.6,34*k,7*k,0,0,6.3);ctx.fill();ctx.fillRect(px-6*k,gy-h*.6-14*k,12*k,28*k);
+    ctx.fillStyle='#10241D';ctx.fillRect(w*.62,gy-h*.98,w*.32,h*.14);ctx.fillStyle='#FFD54A';ctx.font='700 '+Math.round(11*k)+'px sans-serif';ctx.textAlign='left';ctx.fillText('MRU > JED  22:40',w*.64,gy-h*.88);
+    floorGrad(ctx,w,h,gy,'#C9D1D6','#A9B3BA');
+  }else if(kind==='plane'){
+    wallGrad(ctx,w,h,gy,'#E4E7EA','#C9CED3');
+    for(let i=0;i<3;i++){const x=w*.2+i*w*.3;ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x,gy-h*.5,28*k,40*k,0,0,6.3);ctx.fill();ctx.save();ctx.beginPath();ctx.ellipse(x,gy-h*.5,23*k,35*k,0,0,6.3);ctx.clip();ctx.fillStyle=lg(ctx,0,gy-h*.9,0,gy-h*.1,['#3E8FD8','#9FD0F2']);ctx.fillRect(x-30*k,gy-h*.9,60*k,h*.8);ctx.fillStyle='rgba(255,255,255,.9)';const cx=((t*18+i*40)%(70*k))-35*k;ctx.beginPath();ctx.ellipse(x+cx,gy-h*.45,18*k,6*k,0,0,6.3);ctx.fill();ctx.restore();}
+    floorGrad(ctx,w,h,gy,'#4A5F78','#33465C');ctx.fillStyle='#2F5D8A';ctx.fillRect(-w,gy-h*.18,w*3,h*.18);
+  }else if(kind==='barber'){
+    wallGrad(ctx,w,h,gy,'#CFE9E4','#A8D3CC');
+    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;for(let x=-w;x<w*2;x+=36*k){ctx.beginPath();ctx.moveTo(x,-h);ctx.lineTo(x,gy);ctx.stroke();}
+    ctx.fillStyle='#3A2A1C';ctx.fillRect(w*.38,gy-h*.9,w*.5,h*.66);ctx.fillStyle=lg(ctx,0,gy-h*.88,0,gy-h*.28,['#EAF6FB','#B6D7E6']);ctx.fillRect(w*.4,gy-h*.88,w*.46,h*.62);
+    floorGrad(ctx,w,h,gy,'#8F8F95','#6F6F76');
+  }else if(kind==='haram'){
+    ctx.fillStyle=lg(ctx,0,-h,0,gy,['#0A1630','#233B6B','#E3A56A']);ctx.fillRect(-w,-h,w*3,gy+h);
+    ctx.fillStyle='#fff';for(let i=0;i<40;i++){ctx.globalAlpha=.4+.4*Math.sin(t*2+i);ctx.fillRect((i*97)%w,(i*53)%(gy*.6),1.5,1.5);}ctx.globalAlpha=1;
+    for(const mx of[w*.1,w*.3,w*.7,w*.9]){ctx.fillStyle='#E8E0CC';ctx.fillRect(mx,gy-h*.8,w*.025,h*.8);ctx.fillStyle='#C9A227';ctx.beginPath();ctx.arc(mx+w*.0125,gy-h*.82,5*k,0,6.3);ctx.fill();const g=ctx.createRadialGradient(mx+w*.0125,gy-h*.8,2,mx+w*.0125,gy-h*.8,40*k);g.addColorStop(0,'rgba(255,230,150,.7)');g.addColorStop(1,'rgba(255,230,150,0)');ctx.fillStyle=g;ctx.fillRect(mx-40*k,gy-h*1.0,90*k,90*k);}
+    ctx.fillStyle='#0B0B0F';ctx.fillRect(w*.4,gy-h*.5,w*.2,h*.5);ctx.fillStyle='#C9A227';ctx.fillRect(w*.4,gy-h*.4,w*.2,6*k);ctx.fillStyle='rgba(255,230,150,.35)';ctx.fillRect(w*.4,gy-h*.5,w*.2,4);
+    floorGrad(ctx,w,h,gy,'#E9DFC4','#BFB28C');
+  }else{wallGrad(ctx,w,h,gy,'#CFE4F2','#EEF4F7');floorGrad(ctx,w,h,gy,'#D8D2C0','#BDB5A0');}
+}
+function bgFront(ctx,w,h,sc,gy){
+  const k=h/190;
+  if(sc.bg==='stall'){
+    ctx.fillStyle=lg(ctx,0,gy-h*.2,0,gy+h*.3,['#A87B45','#6E4A22']);ctx.fillRect(-w*.1,gy-h*.17,w*.6,h*.5);
+    ctx.fillStyle='#C99A5B';ctx.fillRect(-w*.1,gy-h*.19,w*.6,7*k);
+    if(sc.item){ctx.font=Math.round(34*k)+'px serif';ctx.textAlign='center';ctx.fillText(sc.item,w*.22,gy-h*.2-Math.abs(Math.sin(sc.t*2))*2);}
+    if(sc.ask){ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect?ctx.roundRect(w*.32,gy-h*.19-26*k,58*k,22*k,6):ctx.rect(w*.32,gy-h*.19-26*k,58*k,22*k);ctx.fill();ctx.fillStyle='#10241D';ctx.font='700 '+Math.round(13*k)+'px sans-serif';ctx.fillText(sc.ask+' cr',w*.32+29*k,gy-h*.19-10*k);}
+  }else if(sc.bg==='agency'||sc.bg==='airport'){
+    ctx.fillStyle=lg(ctx,0,gy-h*.2,0,gy+h*.3,['#F1F3F5','#B9C3CA']);ctx.fillRect(-w*.1,gy-h*.17,w*.6,h*.5);ctx.fillStyle='#2F5D8A';ctx.fillRect(-w*.1,gy-h*.19,w*.6,7*k);
+    ctx.fillStyle='#1B2A33';ctx.fillRect(w*.04,gy-h*.34,w*.12,h*.15);ctx.fillStyle='#7CD3F2';ctx.fillRect(w*.045,gy-h*.33,w*.11,h*.12);
+  }
+  for(const c of sc.coins||[]){ctx.fillStyle='#F2C94C';ctx.strokeStyle='#B58A12';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(c.x,c.y,6*k,0,6.3);ctx.fill();ctx.stroke();}
+}
+/* ---------- portrait scene ---------- */
+function portraitDraw(ctx,sc){
+  const {w,h,d}=sc;ctx.setTransform(d,0,0,d,0,0);
+  const gy=h*.8,s=h/105,now=performance.now();
+  const tz=sc.zoom||(sc.spk?1.4:1),tfx=sc.spk==='L'?w*.3:sc.spk==='R'?w*.7:w*.5;
+  sc.cz=sc.cz==null?1:sc.cz;sc.cfx=sc.cfx==null?w*.5:sc.cfx;
+  sc.cz+=(tz-sc.cz)*.07;sc.cfx+=(tfx-sc.cfx)*.07;
+  const z=sc.cz;
+  ctx.save();ctx.translate(w/2-sc.cfx*z,h*.9-gy*z);ctx.scale(z,z);
+  bgBack(ctx,w,h,sc.bg,sc.t||0,gy);
+  if(sc.custom)sc.custom(ctx,sc,gy,s);
+  else{
+    for(const [side,x] of[['L',w*.3],['R',w*.7]]){const n=sc[side];if(!n)continue;n.talk=sc.spk===side&&now<(sc.talkUntil||0);ctx.save();ctx.translate(x,gy);ctx.scale(s,s);person(ctx,0,0,n,(sc.t||0)+(side==='L'?0:1.3),false);ctx.restore();}
+  }
+  bgFront(ctx,w,h,sc,gy);
+  ctx.restore();
+  const vg=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.4)');ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='rgba(0,0,0,.78)';ctx.fillRect(0,0,w,h*.045);ctx.fillRect(0,h*.955,w,h*.045);
+}
+function portraitStart(cv,sc){
+  const ctx=cv.getContext('2d');
+  const fit=()=>{const w=cv.clientWidth||320,h=cv.clientHeight||180,dd=Math.min(2,window.devicePixelRatio||1);cv.width=Math.round(w*dd);cv.height=Math.round(h*dd);sc.w=w;sc.h=h;sc.d=dd;};
+  fit();sc.stop=false;let last=performance.now();sc.t=sc.t||0;
+  const loop=now=>{
+    if(sc.stop||!cv.isConnected)return;requestAnimationFrame(loop);
+    const dt=Math.min(.05,(now-last)/1000);last=now;sc.t+=dt;
+    if(cv.clientWidth&&Math.abs(cv.clientWidth-sc.w)>2)fit();
+    if(sc.tick)sc.tick(dt);portraitDraw(ctx,sc);};
+  requestAnimationFrame(loop);
+}
+function sceneSay(sc,spk,txt,gender,lang,rate){sc.spk=spk;sc.talkUntil=performance.now()+talkMs(txt);speak(txt,lang||DLOC[dlang()]||'en-GB',rate||.95,gender||'m');}
+/* ---------- zoomed world conversations ---------- */
+const NPC_BG={imam:'mosque',ajmal:'mosque',salim:'stall',amina:'agency'};
+function dlgScene(npcId){
+  const n=NPCL.find(x=>x.id===npcId)||NPCL[0];
+  if(!WS.dsc||WS.dsc.npc!==npcId){WS.dsc={npc:npcId,bg:NPC_BG[npcId]||'street',L:Object.assign({},n,{noName:true,mood:'happy'}),R:meChar(),spk:'L',zoom:1.45};}
+  return WS.dsc;
+}
+/* ---------- overlay ---------- */
+function openScn(sc){
+  closeScn(true);SCN.cur=sc;
+  const el=document.createElement('div');el.id='scn';el.className='scn';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+  el.innerHTML=`<canvas id="scncv" class="scncv"></canvas><div class="scnhud"><span class="pill" id="hcoins"></span><span class="pill" id="hpat"></span><button class="btn" data-a="scnclose" aria-label="Close">&times;</button></div><div class="scnbody" id="scnbody"></div>`;
+  document.body.appendChild(el);document.body.classList.add('noscroll');
+  portraitStart(el.querySelector('#scncv'),sc);scnRender();
+}
+const SCN={cur:null};
+function closeScn(silent){
+  const sc=SCN.cur;if(sc){sc.stop=true;}SCN.cur=null;
+  const el=document.getElementById('scn');if(el)el.remove();document.body.classList.remove('noscroll');
+  speechCancel();if(!silent&&sc&&sc.onClose)sc.onClose();
+}
+function scnRender(){
+  const sc=SCN.cur,b=document.getElementById('scnbody');if(!sc||!b)return;
+  const hc=document.getElementById('hcoins');if(hc)hc.textContent='🪙 '+S.credits;
+  const hp=document.getElementById('hpat');if(hp)hp.textContent=sc.kind==='bargain'?'❤️'.repeat(Math.max(0,sc.patience))+'🖤'.repeat(Math.max(0,5-sc.patience)):'';
+  b.innerHTML=sc.kind==='bargain'?bargainBody(sc):sc.kind==='barber'?barberBody(sc):cutBody(sc);
+}
+/* ---------- bargaining stall (sim style) ---------- */
+T3('Wa alaikum assalam wa rahmatullah! Welcome, welcome. For a polite customer I can lower the price a little.','Wa alaykum salam wa rahmatullah ! Bienvenue. Pour un client poli, je peux baisser un peu le prix.','Wa alaykum salam wa rahmatullah! Bienveni, bienveni. Pou enn kliyan poli, mo kapav diminie pri enn tigit.');
+T3('Welcome again, my friend.','Encore bienvenue, mon ami.','Bienveni ankor, mo kamarad.');
+T3('Such good manners. For you I can ease the price a little.','Quelle politesse. Pour vous, je peux baisser un peu le prix.','Kantite bon manyer. Pou ou, mo kapav diminie pri enn tigit.');
+T3('Barakallahu feek, you are kind. A small gift of a price for you.','Barakallahu fik, vous êtes gentil. Un petit prix de faveur pour vous.','Barakallahu fik, ou jantiy. Enn ti pri kado pou ou.');
+T3('Ya Allah, {n} credits? That is far too low, my friend. I would lose on it.','Ya Allah, {n} crédits ? C\'est beaucoup trop bas, mon ami. Je perdrais de l\'argent.','Ya Allah, {n} kredi? Sa tro ba, mo kamarad. Mo pou perdi lor sa.');
+T3('Hmm, {n} is a little low. Let me think... I can go down to {m} credits.','Hmm, {n} c\'est un peu bas. Laissez-moi réfléchir... je peux descendre à {m} crédits.','Hmm, {n} enn tigit ba. Les mo reflesi... mo kapav desann ziska {m} kredi.');
+T3('I can meet you partway: {n} credits.','Je peux faire la moitié du chemin : {n} crédits.','Mo kapav rankont ou a mwatye semin: {n} kredi.');
+T3('You bargain well. {n} credits and we have a deal.','Vous marchandez bien. {n} crédits et c\'est conclu.','Ou marsande byen. {n} kredi ek nou finn tom dakor.');
+T3('Deal at {n} credits. May it bring you blessing.','Marché conclu à {n} crédits. Qu\'il vous apporte la bénédiction.','Marse konkli a {n} kredi. Ki li amenn ou barakat.');
+T3('Enough, enough! I have customers waiting. Come back later, insha Allah.','Assez, assez ! J\'ai des clients qui attendent. Revenez plus tard, insha Allah.','Ase, ase! Mo ena kliyan ki ape atann. Retourn pli tar, insha Allah.');
+T3('Wait, wait, my friend! For you, {n} credits, and not a credit less.','Attendez, attendez, mon ami ! Pour vous, {n} crédits, et pas un de moins.','Atann, atann, mo kamarad! Pou ou, {n} kredi, pa enn kredi anmwen.');
+T3('Go in peace. Come again, insha Allah.','Allez en paix. Revenez, insha Allah.','Ale dan lape. Retourn ankor, insha Allah.');
+T3('Assalamu alaykum! The {item} is {n} credits. What do you think?','Assalamu alaykum ! {item} : {n} crédits. Qu\'en pensez-vous ?','Assalamu alaykum! {item} : {n} kredi. Ki ou panse?');
+T3('You do not have enough credits yet. Recite or play to earn more, then come back.','Vous n\'avez pas encore assez de crédits. Récitez ou jouez pour en gagner, puis revenez.','Ou pankor ena ase kredi. Resit ouswa zwe pou gagn plis, apre retourn.');
+T3('Pleasure doing business. May it bring you blessing.','Un plaisir de faire affaire. Qu\'il vous apporte la bénédiction.','Plezir fer komers ek ou. Ki li amenn ou barakat.');
+T3('Greet','Saluer','Salie');T3('Compliment the goods','Complimenter la marchandise','Konplimant marsandiz la');T3('Ask about it','Poser une question','Demann lor sa');T3('Say please','Dire s\'il vous plaît','Dir souple');T3('Make an offer','Faire une offre','Fer enn ofer');T3('Pay now','Payer','Peye');T3('Walk away','Partir','Ale');T3('Asking','Prix demandé','Pri demande');T3('Your offer','Votre offre','Ou ofer');T3('Close','Fermer','Fermen');T3('Buy at asking price','Acheter au prix demandé','Aste o pri demande');T3('Show me the details','Montrez-moi les détails','Montre mwa bann detay');
+const ITEM_EMOJI={ihram:'🤍',dress:'🧕',belt:'👝',soap:'🧼',bag:'🧳',mat:'🕌',sandals:'🩴',tasbih:'📿',dates:'🌴',attar:'🧴',oud:'🪵',rug:'🟫',thobe:'👘',abaya:'🧕',woodtasbih:'📿',albaik:'🍗',mandi:'🍛',coffee:'☕'};
+const fillN=(s,o)=>String(s).replace(/\{(\w+)\}/g,(m,k)=>o[k]!=null?o[k]:m);
+function startBargain(id){
+  const it=ITEMS[id];if(!it)return;
+  const list=it.p,floor=Math.round(list*.7),step=Math.max(1,Math.round(list*.04));
+  const seller=it.z==='home'?Object.assign({},NPCL.find(n=>n.id==='salim')):{id:'abu',n:'Abu Khalid',body:'#7A4E2B',head:'amamah',skin:'#B98055',beard:1};
+  const sc={kind:'bargain',id,it,zone:it.z,list,floor,step,ask:list,offer:Math.round(list*.78),patience:5,f:{},walks:0,deal:0,over:false,bg:'stall',L:Object.assign(seller,{noName:true,mood:'happy',amp:0}),R:meChar(),spk:'L',zoom:1.5,item:ITEM_EMOJI[id]||'🛍️',coins:[],caption:'',onClose:()=>{if(tab==='shop'||tab==='souks')render();}};
+  sc.tick=dt=>{sc.coins=sc.coins.filter(c=>{c.vy+=600*dt;c.x+=c.vx*dt;c.y+=c.vy*dt;return c.y<sc.h*1.2;});};
+  openScn(sc);bsay(sc,fillN(tr('Assalamu alaykum! The {item} is {n} credits. What do you think?'),{item:it.n,n:list}),'happy');
+}
+function bsay(sc,txt,mood){sc.L.mood=mood||sc.L.mood;sc.caption=txt;sceneSay(sc,'L',txt,'m');sc.ask=sc.ask;scnRender();}
+function bargainBody(sc){
+  const price=sc.ask,can=S.credits>=price,dealOk=sc.deal>0;
+  return `<div class="card"><span class="tag">${esc(sc.L.n)}</span><p class="bcap">${esc(sc.caption)}</p></div>
+  <div class="card"><div class="row between"><div><span class="tag">${esc(tr('Asking'))}</span><div class="big-num price" id="bask">${price}</div></div><div><span class="tag">${esc(tr('Your offer'))}</span><div class="big-num" id="boffv">${sc.offer}</div></div></div>
+  ${sc.over?'':`<input type="range" id="offr" min="${Math.max(1,Math.round(sc.list*.3))}" max="${sc.list}" value="${sc.offer}" aria-label="${esc(tr('Your offer'))}" style="width:100%">
+  <div class="row" style="justify-content:center"><button class="chip" data-a="boff" data-v="-5">-5</button><button class="chip" data-a="boff" data-v="-1">-1</button><button class="chip" data-a="boff" data-v="1">+1</button><button class="chip" data-a="boff" data-v="5">+5</button></div>`}
+  </div>
+  ${sc.over?`<div class="row"><button class="btn primary" data-a="scnclose">${esc(tr('Close'))}</button></div>`:dealOk?`<div class="row"><button class="btn primary" data-a="bpay"${S.credits<sc.deal?' disabled':''}>${esc(tr('Pay now'))}: ${sc.deal} ${esc(t('credits'))}</button><button class="btn" data-a="bwalk">${esc(tr('Walk away'))}</button></div>`:
+  `<div class="row"><button class="btn primary" data-a="boffer">${esc(tr('Make an offer'))}</button><button class="btn" data-a="bbuy"${can?'':' disabled'}>${esc(tr('Buy at asking price'))}</button></div>
+  <div class="row"><button class="chip" data-a="bgreet">🤝 ${esc(tr('Greet'))}</button><button class="chip" data-a="bplease">🙏 ${esc(tr('Say please'))}</button><button class="chip" data-a="bpraise">✨ ${esc(tr('Compliment the goods'))}</button><button class="chip" data-a="bask">❓ ${esc(tr('Ask about it'))}</button><button class="chip" data-a="bwalk">🚶 ${esc(tr('Walk away'))}</button></div>`}
+  ${S.credits<sc.deal?`<p class="bad">${esc(tr('You do not have enough credits yet. Recite or play to earn more, then come back.'))}</p>`:''}`;
+}
+function bLower(sc,key){if(sc.f[key])return false;sc.f[key]=1;sc.ask=Math.max(sc.floor,sc.ask-sc.step);return true;}
+function bCheckEnd(sc){if(sc.patience<=0){sc.over=true;sc.deal=0;bsay(sc,tr('Enough, enough! I have customers waiting. Come back later, insha Allah.'),'angry');return true;}return false;}
+function bCoins(sc){for(let i=0;i<14;i++)sc.coins.push({x:sc.w*.7,y:sc.h*.3,vx:(Math.random()-.8)*200,vy:-200-Math.random()*160});}
+function bPurchase(sc){
+  if(S.credits<sc.deal){toast(tr('You do not have enough credits yet. Recite or play to earn more, then come back.'));return;}
+  S.credits-=sc.deal;if(sc.it.z==='home')S.owned[sc.id]=1;else S.souk[sc.id]=(S.souk[sc.id]||0)+1;save();chime(520,.2);bCoins(sc);buzz(30);
+  sc.over=true;sc.deal=0;bsay(sc,tr('Pleasure doing business. May it bring you blessing.'),'joy');
+}
+Object.assign(A,{
+ haggle(el){startBargain(el.dataset.v);},
+ scnclose(){closeScn(false);},
+ boff(el){const sc=SCN.cur;if(!sc)return;sc.offer=Math.max(1,Math.min(sc.list,sc.offer+(+el.dataset.v)));const r=document.getElementById('offr');if(r)r.value=sc.offer;const v=document.getElementById('boffv');if(v)v.textContent=sc.offer;chime(400+sc.offer,.03);},
+ bgreet(){const sc=SCN.cur;if(!sc)return;bsay(sc,bLower(sc,'g')?tr('Wa alaikum assalam wa rahmatullah! Welcome, welcome. For a polite customer I can lower the price a little.'):tr('Welcome again, my friend.'),'happy');},
+ bplease(){const sc=SCN.cur;if(!sc)return;bsay(sc,bLower(sc,'p')?tr('Such good manners. For you I can ease the price a little.'):tr('Welcome again, my friend.'),'happy');},
+ bpraise(){const sc=SCN.cur;if(!sc)return;bsay(sc,bLower(sc,'t')?tr('Barakallahu feek, you are kind. A small gift of a price for you.'):tr('Welcome again, my friend.'),'joy');},
+ bask(){const sc=SCN.cur;if(!sc)return;bsay(sc,sc.it.tip,'neutral');},
+ boffer(){
+   const sc=SCN.cur;if(!sc||sc.over)return;const o=sc.offer;
+   if(o>=sc.ask){sc.deal=o;bsay(sc,fillN(tr('Deal at {n} credits. May it bring you blessing.'),{n:o}),'joy');return;}
+   if(o<Math.round(sc.floor*.85)){sc.patience-=2;if(bCheckEnd(sc))return;bsay(sc,fillN(tr('Ya Allah, {n} credits? That is far too low, my friend. I would lose on it.'),{n:o}),'angry');return;}
+   if(o<sc.floor){sc.patience-=1;sc.ask=Math.max(sc.floor,sc.ask-sc.step);if(bCheckEnd(sc))return;bsay(sc,fillN(tr('Hmm, {n} is a little low. Let me think... I can go down to {m} credits.'),{n:o,m:sc.ask}),'sad');return;}
+   const na=Math.max(sc.floor,Math.ceil((sc.ask+o)/2));sc.ask=na;
+   if(na-o<=1){sc.deal=na;bsay(sc,fillN(tr('You bargain well. {n} credits and we have a deal.'),{n:na}),'joy');}
+   else bsay(sc,fillN(tr('I can meet you partway: {n} credits.'),{n:na}),'neutral');},
+ bbuy(){const sc=SCN.cur;if(!sc)return;sc.deal=sc.ask;bPurchase(sc);},
+ bpay(){const sc=SCN.cur;if(!sc)return;bPurchase(sc);},
+ bwalk(){
+   const sc=SCN.cur;if(!sc)return;
+   if(sc.walks===0&&!sc.over){sc.walks=1;sc.ask=Math.max(sc.floor,sc.ask-sc.step*2);sc.deal=0;sc.offer=Math.min(sc.offer,sc.ask);bsay(sc,fillN(tr('Wait, wait, my friend! For you, {n} credits, and not a credit less.'),{n:sc.ask}),'happy');return;}
+   sceneSay(sc,'L',tr('Go in peace. Come again, insha Allah.'),'m');setTimeout(()=>closeScn(false),600/FAST);}
+});
+document.addEventListener('input',e=>{if(e.target.id==='offr'&&SCN.cur){SCN.cur.offer=+e.target.value;const v=document.getElementById('boffv');if(v)v.textContent=SCN.cur.offer;}});
+/* ---------- barber: halq and taqsir in Makkah ---------- */
+T3('Alhamdulillah, you have completed sa\'i. The last rite of Umrah is to shave the head (halq), which is better, or to trim the hair (taqsir). The Prophet prayed for those who shave, and also for those who trim.','Alhamdulillah, vous avez terminé le sa\'i. Le dernier rite de la Omra est de se raser la tête (halq), ce qui est meilleur, ou de raccourcir les cheveux (taqsir). Le Prophète a invoqué pour ceux qui se rasent, et aussi pour ceux qui raccourcissent.','Alhamdulillah, ou finn fini sa\'i. Dernie rit Umra se rase latet (halq), ki pli bon, ouswa kourt seve (taqsir). Prophet finn priye pou bann ki rase, ek osi pou bann ki kourt.');
+T3('Women gather the hair and trim about a fingertip length from the ends. Do this privately, away from other people\'s eyes.','Les femmes rassemblent leurs cheveux et coupent environ la longueur d\'un bout de doigt aux pointes. Faites-le en privé, à l\'abri des regards.','Bann fam ramas zot seve ek kourt anviron enn bout dwa lor bout. Fer sa an prive, lwin dan lizie lezot.');
+T3('Sit down, say Bismillah, and begin from the right side of the head.','Asseyez-vous, dites Bismillah, et commencez par le côté droit de la tête.','Asize, dir Bismillah, ek komans par kote drwat latet.');
+T3('Trim the hair evenly from the whole head, not just a few strands. Say Bismillah.','Raccourcissez les cheveux uniformément sur toute la tête, pas seulement quelques mèches. Dites Bismillah.','Kourt seve parey lor tou latet, pa zis kikn seve. Dir Bismillah.');
+T3('Bismillah. Allahu Akbar.','Bismillah. Allahu Akbar.','Bismillah. Allahu Akbar.');
+T3('Allahu Akbar! Your Umrah is complete, alhamdulillah. You may now leave the state of ihram. Taqabbal Allahu minkum: may Allah accept it from you.','Allahu Akbar ! Votre Omra est accomplie, alhamdulillah. Vous sortez maintenant de l\'ihram. Taqabbal Allahu minkum : qu\'Allah l\'accepte de vous.','Allahu Akbar! Ou Umra fini, alhamdulillah. Aster ou kapav sorti dan ihram. Taqabbal Allahu minkum: ki Allah aksepte sa depi ou.');
+T3('Shave the head (halq)','Se raser la tête (halq)','Rase latet (halq)');T3('Trim the hair (taqsir)','Raccourcir les cheveux (taqsir)','Kourt seve (taqsir)');T3('Begin','Commencer','Komans');T3('Start','Démarrer','Komans');T3('Complete Umrah','Terminer la Omra','Fini Umra');T3('Go to the barber','Aller chez le coiffeur','Al kot kwafer');
+function startBarber(){
+  const fem=S.avatar==='woman'||S.avatar==='girl';
+  const sc={kind:'barber',step:0,mode:fem?'trim':'',fem,p:0,anim:false,bg:fem?'plain':'barber',L:{id:'barber',n:'Barber Hamid',body:'#4F7CAC',head:'hair',skin:'#C9966B',beard:1,noName:true,mood:'happy'},R:meChar(),spk:'L',zoom:1,parts:[],onClose:()=>{render();}};
+  sc.custom=barberDraw;
+  sc.tick=dt=>{
+    if(sc.anim){sc.p=Math.min(1,sc.p+dt/(7/FAST));if(Math.random()<dt*14)chime(sc.mode==='shave'?150+Math.random()*50:900+Math.random()*200,.04);
+      if(sc.p>=1){sc.anim=false;sc.step=2;sc.mood='joy';sc.L.mood='joy';sceneSay(sc,'L',tr('Allahu Akbar! Your Umrah is complete, alhamdulillah. You may now leave the state of ihram. Taqabbal Allahu minkum: may Allah accept it from you.'),'m');scnRender();}
+      const hx=sc.hx||0,hy=sc.hy||0;if(sc.anim&&Math.random()<dt*30)sc.parts.push({x:hx,y:hy,vx:(Math.random()-.5)*40,vy:20+Math.random()*30,r:1.5+Math.random()*2});}
+    sc.parts=sc.parts.filter(q=>{q.vy+=280*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;return q.y<sc.h*1.1;});};
+  openScn(sc);
+  sceneSay(sc,'L',fem?tr('Women gather the hair and trim about a fingertip length from the ends. Do this privately, away from other people\'s eyes.'):tr('Alhamdulillah, you have completed sa\'i. The last rite of Umrah is to shave the head (halq), which is better, or to trim the hair (taqsir). The Prophet prayed for those who shave, and also for those who trim.'),'m');
+}
+function barberBody(sc){
+  if(sc.step===0)return `<div class="card"><span class="tag">${esc(sc.fem?'Taqsir':'Halq / Taqsir')}</span><p class="bcap">${esc(sc.fem?tr('Women gather the hair and trim about a fingertip length from the ends. Do this privately, away from other people\'s eyes.'):tr('Alhamdulillah, you have completed sa\'i. The last rite of Umrah is to shave the head (halq), which is better, or to trim the hair (taqsir). The Prophet prayed for those who shave, and also for those who trim.'))}</p><div class="src">${esc(t('source'))}: Sahih al-Bukhari 1727; Quran 48:27; Sunan Abi Dawud 1984</div></div>
+  <div class="row">${sc.fem?`<button class="btn primary" data-a="bbmode" data-v="trim">${esc(tr('Begin'))}</button>`:`<button class="btn primary" data-a="bbmode" data-v="shave">${esc(tr('Shave the head (halq)'))}</button><button class="btn" data-a="bbmode" data-v="trim">${esc(tr('Trim the hair (taqsir)'))}</button>`}</div>`;
+  if(sc.step===1)return `<div class="card"><span class="tag">${esc(sc.mode==='shave'?'Halq':'Taqsir')}</span><p class="bcap">${esc(sc.mode==='shave'?tr('Sit down, say Bismillah, and begin from the right side of the head.'):tr('Trim the hair evenly from the whole head, not just a few strands. Say Bismillah.'))}</p>${sc.mode==='shave'?`<div class="src">${esc(t('source'))}: Sahih Muslim 1305</div>`:''}</div>
+  <div class="row">${sc.anim?`<span class="muted">…</span>`:`<button class="btn primary" data-a="bbgo">${esc(tr('Start'))}</button>`}</div><div class="bar"><i style="width:${Math.round(sc.p*100)}%"></i></div>`;
+  return `<div class="card"><span class="tag">${esc(sc.fem?'Taqsir':sc.mode==='shave'?'Halq':'Taqsir')}</span><p class="bcap">${esc(tr('Allahu Akbar! Your Umrah is complete, alhamdulillah. You may now leave the state of ihram. Taqabbal Allahu minkum: may Allah accept it from you.'))}</p><div class="ar">اللَّهُ أَكْبَرُ، تَقَبَّلَ اللَّهُ مِنَّا وَمِنْكُمْ</div></div>
+  <div class="row"><button class="btn primary" data-a="bbdone">${esc(tr('Complete Umrah'))}</button></div>`;
+}
+function hairShape(ctx,cx,cy,r,len){ctx.beginPath();ctx.ellipse(cx,cy-r*.1,r*(1.04+len),r*(.98+len*.6),0,Math.PI*.98,Math.PI*2.02);ctx.lineTo(cx+r*(1.0+len),cy+r*(.15+len*2));ctx.lineTo(cx+r*.85,cy+r*.02);ctx.lineTo(cx-r*.85,cy+r*.02);ctx.lineTo(cx-r*(1.0+len),cy+r*(.15+len*2));ctx.closePath();}
+function barberDraw(ctx,sc,gy,s){
+  const w=sc.w,h=sc.h,k=h/190,t=sc.t;
+  if(sc.fem){ // private trimming: only hands, a lock of hair and scissors
+    ctx.fillStyle=lg(ctx,0,-h,0,gy*1.3,['#F5E9DF','#E9D3C3']);ctx.fillRect(-w,-h,w*3,h*3);
+    const cx=w*.5,top=h*.12,bot=h*.78;
+    const len=bot-top,cut=sc.p>.5?1:0,keep=cut?len*(1-.16*Math.min(1,(sc.p-.5)*2)):len;
+    ctx.strokeStyle='#4A2E1C';ctx.lineWidth=14*k;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(cx,top);ctx.bezierCurveTo(cx-24*k,top+keep*.3,cx+24*k,top+keep*.6,cx-4*k,top+keep);ctx.stroke();
+    ctx.strokeStyle='#6A4A33';ctx.lineWidth=3*k;ctx.beginPath();ctx.moveTo(cx-3*k,top);ctx.bezierCurveTo(cx-27*k,top+keep*.3,cx+21*k,top+keep*.6,cx-7*k,top+keep);ctx.stroke();
+    ctx.fillStyle='#D9A878';ctx.beginPath();ctx.ellipse(cx,top,16*k,10*k,0,0,6.3);ctx.fill();ctx.fillStyle='#E7BC91';ctx.fillRect(cx-9*k,top-30*k,18*k,34*k);
+    const sx=cx-4*k,sy=top+keep,open=Math.abs(Math.sin(t*(sc.anim?16:3)))*.5;
+    ctx.save();ctx.translate(sx+30*k,sy);ctx.strokeStyle='#B8C0C8';ctx.lineWidth=3*k;for(const sgn of[-1,1]){ctx.save();ctx.rotate(sgn*open+Math.PI);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(48*k,0);ctx.stroke();ctx.restore();}ctx.fillStyle='#D9A878';ctx.beginPath();ctx.arc(40*k,0,8*k,0,6.3);ctx.fill();ctx.restore();
+    sc.hx=sx;sc.hy=sy;
+    ctx.strokeStyle='#4A8F5C';ctx.lineWidth=2*k;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(cx+34*k,sy-12*k);ctx.lineTo(cx+34*k,sy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#4A8F5C';ctx.font='700 '+Math.round(10*k)+'px sans-serif';ctx.textAlign='left';ctx.fillText('≈ fingertip',cx+38*k,sy-3*k);
+  }else{
+    // barber at left, customer head close-up at right
+    ctx.save();ctx.translate(w*.2,gy);ctx.scale(s*1.05,s*1.05);sc.L.talk=sc.spk==='L'&&performance.now()<(sc.talkUntil||0);person(ctx,0,0,sc.L,t,false);ctx.restore();
+    const cx=w*.68,cy=h*.46,r=h*.26;
+    ctx.fillStyle='#3F6FA0';ctx.beginPath();ctx.moveTo(cx-r*1.5,h);ctx.quadraticCurveTo(cx-r*1.3,cy+r*1.1,cx,cy+r*.95);ctx.quadraticCurveTo(cx+r*1.3,cy+r*1.1,cx+r*1.5,h);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#C9966B';ctx.fillRect(cx-r*.28,cy+r*.7,r*.56,r*.35);
+    const g=ctx.createRadialGradient(cx-r*.3,cy-r*.3,r*.1,cx,cy,r*1.1);g.addColorStop(0,'#EBC49B');g.addColorStop(1,'#C9946A');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,cy,r*.92,r,0,0,6.3);ctx.fill();
+    ctx.fillStyle='#C9946A';ctx.beginPath();ctx.ellipse(cx-r*.95,cy+r*.05,r*.13,r*.22,0,0,6.3);ctx.ellipse(cx+r*.95,cy+r*.05,r*.13,r*.22,0,0,6.3);ctx.fill();
+    ctx.strokeStyle='#2A1D16';ctx.lineWidth=2.2*k;ctx.lineCap='round';ctx.beginPath();ctx.arc(cx-r*.34,cy+r*.02,r*.12,.2,Math.PI-.2);ctx.arc(cx+r*.34,cy+r*.02,r*.12,.2,Math.PI-.2);ctx.stroke();
+    ctx.strokeStyle='#8A3A2A';ctx.beginPath();ctx.arc(cx,cy+r*.3,r*.2,.25,Math.PI-.25);ctx.stroke();
+    if(sc.mode==='shave'){ctx.fillStyle='#3A2A22';ctx.beginPath();ctx.ellipse(cx,cy+r*.62,r*.55,r*.38,0,0,Math.PI);ctx.fill();ctx.fillStyle='#C9946A';ctx.beginPath();ctx.ellipse(cx,cy+r*.52,r*.38,r*.2,0,0,Math.PI);ctx.fill();}
+    // hair
+    const rows=[cy-r*1.1,cy-r*.72,cy-r*.4,cy+r*.1],len=sc.mode==='trim'?.16*(1-sc.p*.75):0;
+    ctx.fillStyle='#1E140E';let toolX=cx,toolY=cy-r;
+    if(sc.mode==='shave'){
+      const pr=Math.min(.9999,sc.p)*3,row=Math.floor(pr),fr=pr-row;
+      for(let i=0;i<3;i++){
+        if(i<row)continue;ctx.save();ctx.beginPath();ctx.rect(cx-r*1.6,rows[i],r*3.2,rows[i+1]-rows[i]);ctx.clip();
+        if(i===row&&sc.p>0){ctx.beginPath();ctx.rect(cx-r*1.6+ (r*3.2)*fr,rows[i],r*3.2,rows[i+1]-rows[i]);ctx.clip();}
+        hairShape(ctx,cx,cy,r,.04);ctx.fill();ctx.restore();}
+      if(sc.p>0&&sc.p<1){toolX=cx-r*1.6+r*3.2*fr;toolY=(rows[row]+rows[row+1])/2;}
+      else if(sc.p<=0){toolX=cx+r*1.4;toolY=cy-r*1.3;}
+      // shaved scalp sheen
+      if(sc.p>0){ctx.fillStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.ellipse(cx-r*.3,cy-r*.72,r*.3,r*.12,-.4,0,6.3);ctx.fill();}
+    }else{
+      hairShape(ctx,cx,cy,r,.04+len);ctx.fill();
+      const an=Math.PI*1.05+Math.min(1,sc.p)*Math.PI*.9;toolX=cx+Math.cos(an)*r*(1.15+len);toolY=cy+Math.sin(an)*r*(1.0+len*.6);if(sc.p<=0){toolX=cx+r*1.4;toolY=cy-r*1.2;}
+    }
+    sc.hx=toolX;sc.hy=toolY;
+    // arm and tool
+    ctx.strokeStyle='#4F7CAC';ctx.lineWidth=16*k;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(w*.3,gy-h*.42);ctx.quadraticCurveTo(w*.42,gy-h*.7,toolX-10*k,toolY+6*k);ctx.stroke();
+    ctx.fillStyle='#C9966B';ctx.beginPath();ctx.arc(toolX-8*k,toolY+4*k,8*k,0,6.3);ctx.fill();
+    if(sc.mode==='shave'){ctx.fillStyle='#CBD3DA';ctx.fillRect(toolX-2*k,toolY-8*k,26*k,9*k);ctx.fillStyle='#2B3A47';ctx.fillRect(toolX+22*k,toolY-6*k,14*k,5*k);}
+    else{const op=Math.abs(Math.sin(t*(sc.anim?16:3)))*.5;ctx.save();ctx.translate(toolX,toolY);ctx.strokeStyle='#B8C0C8';ctx.lineWidth=3*k;for(const sg of[-1,1]){ctx.save();ctx.rotate(sg*op);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(30*k,0);ctx.stroke();ctx.restore();}ctx.restore();}
+  }
+  ctx.fillStyle='#2A1D16';for(const q of sc.parts||[]){ctx.beginPath();ctx.ellipse(q.x,q.y,q.r*1.6,q.r*.7,q.x,0,6.3);ctx.fill();}
+}
+Object.assign(A,{
+ barber(){startBarber();},
+ bbmode(el){const sc=SCN.cur;if(!sc)return;sc.mode=el.dataset.v;sc.step=1;sc.L.mood='happy';sceneSay(sc,'L',sc.mode==='shave'?tr('Sit down, say Bismillah, and begin from the right side of the head.'):tr('Trim the hair evenly from the whole head, not just a few strands. Say Bismillah.'),'m');scnRender();},
+ bbgo(){const sc=SCN.cur;if(!sc)return;sc.anim=true;sc.p=0.0001;sceneSay(sc,'L',tr('Bismillah. Allahu Akbar.'),'m');scnRender();},
+ bbdone(){closeScn(true);A.halq();}
+});
+/* ---------- cutscenes: airport check-in, send-off, arrival ---------- */
+T3('Good afternoon, and welcome to Sir Seewoosagur Ramgoolam airport. Passport and ticket, please.','Bon après-midi et bienvenue à l\'aéroport Sir Seewoosagur Ramgoolam. Passeport et billet, s\'il vous plaît.','Bonzour ek bienveni dan aeroport Sir Seewoosagur Ramgoolam. Paspor ek tiket, souple.');
+T3('Assalamu alaykum. Here they are. I am travelling for {trip}.','Assalamu alaykum. Les voici. Je voyage pour la {trip}.','Assalamu alaykum. Tinn ena. Mo pe vwayaz pou {trip}.');
+T3('Your visa is valid. Let me weigh your bag: {w} kilograms. That is within the 23 kilogram limit.','Votre visa est valide. Je pèse votre valise : {w} kilos. C\'est dans la limite de 23 kilos.','Ou viza valab. Mo pe pez ou valiz: {w} kilo. Sa dan limit 23 kilo.');
+T3('Here is your boarding pass, seat {seat}. Boarding starts at the gate in thirty minutes. Safe travels.','Voici votre carte d\'embarquement, siège {seat}. L\'embarquement commence à la porte dans trente minutes. Bon voyage.','Vwasi ou karte bordaz, plas {seat}. Bordaz komans kot laport dan trant minit. Bon vwayaz.');
+T3('Jazakallahu khayran.','Jazakallahu khayran.','Jazakallahu khayran.');
+T3('We will miss you. Go with the travellers\' dua: Astawdi\'ullaha deenaka wa amanataka wa khawatima amalik.','Vous allez nous manquer. Partez avec l\'invocation du voyageur : Astawdi\'ullaha deenaka wa amanataka wa khawatima amalik.','Ou pou manke nou. Ale ek dua bann vwayazer: Astawdi\'ullaha deenaka wa amanataka wa khawatima amalik.');
+T3('Ameen. Please make dua for me too.','Amine. Faites aussi des invocations pour moi.','Amin. Souple fer dua pou mwa osi.');
+T3('Ladies and gentlemen, this is your captain. We are beginning our descent into Jeddah. Please fasten your seat belts and keep reciting the talbiyah.','Mesdames et messieurs, ici votre commandant. Nous commençons notre descente vers Djeddah. Veuillez attacher votre ceinture et continuer la talbiya.','Mesyedam ek mesye, se ou kapitenn. Nou pe komans desann pou Jeddah. Souple atas ou seintir ek kontinie resit talbiyah.');
+T3('Welcome to the Kingdom of Saudi Arabia. May Allah accept your Umrah.','Bienvenue au Royaume d\'Arabie saoudite. Qu\'Allah accepte votre Omra.','Bienveni dan Rwayom Larabi Saoudit. Ki Allah aksepte ou Umra.');
+T3('Marhaba! Your Haramain high-speed train to Makkah leaves in ten minutes. Sit back and keep reciting the talbiyah.','Marhaba ! Votre train à grande vitesse Haramain pour La Mecque part dans dix minutes. Installez-vous et continuez la talbiya.','Marhaba! Ou trin rapid Haramain pou Lamek parti dan dis minit. Asize ek kontinie resit talbiyah.');
+T3('Your first sight of the Haram. Lower your gaze, keep reciting the talbiyah, and thank Allah for bringing you here.','Votre première vue du Haram. Baissez le regard, continuez la talbiya et remerciez Allah de vous avoir amené ici.','Ou premye lizie lor Haram. Bes ou lizie, kontinie resit talbiyah ek remersie Allah pou finn amenn ou isi.');
+T3('Continue','Continuer','Kontinie');T3('Replay voice','Rejouer la voix','Re-ekout lavwa');
+const CUTS={
+ checkin:()=>[
+  {bg:'airport',L:{id:'yusuf',n:'Yusuf',body:'#2F5D8A',head:'hair',skin:'#C28A5E',beard:0},spk:'L',txt:'Good afternoon, and welcome to Sir Seewoosagur Ramgoolam airport. Passport and ticket, please.'},
+  {bg:'airport',spk:'R',txt:'Assalamu alaykum. Here they are. I am travelling for {trip}.',vars:()=>({trip:t(S.mode)})},
+  {bg:'airport',spk:'L',txt:'Your visa is valid. Let me weigh your bag: {w} kilograms. That is within the 23 kilogram limit.',vars:()=>({w:weight().toFixed(1)})},
+  {bg:'airport',spk:'L',txt:'Here is your boarding pass, seat {seat}. Boarding starts at the gate in thirty minutes. Safe travels.',vars:()=>({seat:S.seat||'12A'})},
+  {bg:'airport',spk:'R',txt:'Jazakallahu khayran.'},
+  {bg:'street',L:{id:'imam',n:'Imam Irfaan',body:'#F4F4EF',head:'amamah',skin:'#C9966B',beard:1},spk:'L',txt:'We will miss you. Go with the travellers\' dua: Astawdi\'ullaha deenaka wa amanataka wa khawatima amalik.',ar:'أَسْتَوْدِعُ اللَّهَ دِينَكَ وَأَمَانَتَكَ وَخَوَاتِيمَ عَمَلِكَ',src:'Jami at-Tirmidhi 3443; Sunan Abi Dawud 2600'},
+  {bg:'street',spk:'R',txt:'Ameen. Please make dua for me too.'}],
+ arrival:()=>[
+  {bg:'plane',L:{id:'cap',n:'Captain',body:'#1F3A5F',head:'hair',skin:'#D2A074',beard:0},spk:'L',txt:'Ladies and gentlemen, this is your captain. We are beginning our descent into Jeddah. Please fasten your seat belts and keep reciting the talbiyah.'},
+  {bg:'airport',L:{id:'imm',n:'Officer',body:'#6B7A86',head:'amamah',skin:'#C9966B',beard:1},spk:'L',txt:'Welcome to the Kingdom of Saudi Arabia. May Allah accept your Umrah.'},
+  {bg:'street',L:{id:'drv',n:'Abu Saleh',body:'#8A5A2B',head:'amamah',skin:'#B98055',beard:1},spk:'L',txt:'Marhaba! Your Haramain high-speed train to Makkah leaves in ten minutes. Sit back and keep reciting the talbiyah.'},
+  {bg:'haram',spk:'R',txt:'Your first sight of the Haram. Lower your gaze, keep reciting the talbiyah, and thank Allah for bringing you here.',ar:'لَبَّيْكَ اللَّهُمَّ لَبَّيْكَ',src:'Sahih al-Bukhari 1549'}]
+};
+function startCut(id,done){
+  const steps=CUTS[id]();
+  const sc={kind:'cut',id,i:0,steps,done,bg:steps[0].bg,L:null,R:meChar(),spk:'L',zoom:1.4,onClose:()=>{}};
+  openScn(sc);cutGo(sc,0);
+}
+function cutLine(sc){const st=sc.steps[sc.i];return fillN(tr(st.txt),st.vars?st.vars():{});}
+function cutGo(sc,i){
+  sc.i=Math.max(0,Math.min(sc.steps.length-1,i));const st=sc.steps[sc.i];
+  sc.bg=st.bg;let lc=null;for(let j=sc.i;j>=0&&!lc;j--){const q=sc.steps[j];if(q.bg!==st.bg)break;if(q.L)lc=q.L;}
+  sc.L=lc?Object.assign({},lc,{noName:true,mood:'happy'}):null;sc.cz=1;
+  const line=cutLine(sc),isMe=st.spk==='R',g=isMe?myGender():'m';
+  sc.spk=(sc.L||isMe)?st.spk:'R';
+  sceneSay(sc,sc.spk,line,g);
+  if(st.ar)setTimeout(()=>{if(SCN.cur===sc)speak(st.ar,'ar-SA',.75,'m');},talkMs(line)+300);
+  scnRender();
+}
+function cutBody(sc){
+  const st=sc.steps[sc.i],last=sc.i===sc.steps.length-1;
+  return `<div class="card"><span class="tag">${esc(st.spk==='L'&&sc.L?sc.L.n:(st.spk==='R'?(S.name||'You'):'Narrator'))} · ${sc.i+1} / ${sc.steps.length}</span><p class="bcap">${esc(cutLine(sc))}</p>${st.ar?`<div class="ar">${st.ar}</div>`:''}${st.src?`<div class="src">${esc(t('source'))}: ${esc(st.src)}</div>`:''}</div>
+  <div class="row">${sc.i>0?`<button class="btn" data-a="cprev">◀ ${esc(t('back'))}</button>`:''}<button class="btn" data-a="creplay">🔊 ${esc(tr('Replay voice'))}</button><button class="btn primary" data-a="cnext">${esc(last?tr('Continue'):t('next'))} ▶</button></div>`;
+}
+Object.assign(A,{
+ cnext(){const sc=SCN.cur;if(!sc)return;if(sc.i>=sc.steps.length-1){const d=sc.done;closeScn(true);if(d)d();}else cutGo(sc,sc.i+1);},
+ cprev(){const sc=SCN.cur;if(sc)cutGo(sc,sc.i-1);},
+ creplay(){const sc=SCN.cur;if(sc)cutGo(sc,sc.i);}
+});
+
+/* ================= Mauritian Creole (Kreol Morisien): conversations, scenes, quiz ================= */
+DT_ROWS.push(
+['Show me wudhu and prayer step by step','أرني الوضوء والصلاة خطوة بخطوة','وضو اور نماز مرحلہ وار دکھائیں','Montre-moi le wudu et la prière étape par étape','Tunjukkan wudhu dan shalat langkah demi langkah','Bana abdest ve namazı adım adım göster','ওযু ও নামায ধাপে ধাপে দেখান'],
+['Assalamu alaykum, Nasseer here! Learn wudhu and salah first, then tawaf and sa\'i. Practise each step slowly until it feels easy.','السلام عليكم، أنا ناصر! تعلّم الوضوء والصلاة أولاً ثم الطواف والسعي. تدرّب على كل خطوة ببطء حتى تسهل عليك.','السلام علیکم، میں ناصر ہوں! پہلے وضو اور نماز سیکھیں، پھر طواف اور سعی۔ ہر مرحلہ آہستہ مشق کریں یہاں تک کہ آسان ہو جائے۔','Assalamu alaykum, Nasseer ! Apprends d\'abord le wudu et la prière, puis le tawaf et le sa\'i. Entraîne-toi lentement à chaque étape.','Assalamu\'alaikum, Nasseer di sini! Pelajari wudhu dan shalat dulu, lalu tawaf dan sa\'i. Latih setiap langkah pelan-pelan sampai terasa mudah.','Esselamu aleyküm, ben Nasseer! Önce abdest ve namazı, sonra tavaf ve sa\'y\'i öğren. Her adımı yavaşça tekrar et.','আসসালামু আলাইকুম, আমি নাসির! আগে ওযু ও নামায শিখো, তারপর তাওয়াফ ও সায়ী। প্রতিটি ধাপ ধীরে ধীরে অনুশীলন করো।']);
+DT_ROWS.slice(-2).forEach(r=>{DT[r[0]]={};DLANG_ORDER.forEach((l,i)=>DT[r[0]][l]=r[i+1]);});
+const MFE_ROWS=[
+'Assalamu alaykum, mo zenfan! Mo Imam Irfaan. Bienveni dan nou Moske Zimaa. Eski ou pare pou vwayaz tou lavi?',
+'Sinserite, ek arranz zafer ek bann dimounn ou finn fer tor. Rapel: enn Umra ziska lot Umra, se enn kaffara pou sa ki ena ant zot.',
+'Gard enn gid kot ou, me touzour demann enn ulama kalifie pou ou prop sitiasyon. Bann lekol kapav diferan dan bann detay, alor swiv ulama ou group.',
+'Bann aksyon zize par zot lintansyon. Dan miqat ou dir dan ou leker ki ou ena lintansyon fer Umra pou Allah, apre ou resit talbiyah: Labbayk Allahumma labbayk.',
+'Ki preparasyon pli important?','Si mo pa konpran bann regleman?','Souple, aprann mwa lintansyon (niyyah)','Orevwar','Mersi, Imam Irfaan','Mersi','Jazakallahu khayran','Insha Allah','Amin',
+'Salam! Mo Aman. Avan nenport ki vwayaz, Prophet finn aprann nou enn dua vwayaz. Dir li kan ou monte: Subhana alladhi sakhkhara lana hadha.',
+'Alo, se Bill! Atas ou samyo ek met ou konfyans dan Allah, mo kamarad: ferm ou valiz, gard ou paspor byen, apre kont lor Li.',
+'Assalamu alaykum, se Jameel. Allah zoli e Li kontan sa ki zoli, alor res propre ek pwop. Pran ti zafer ki lezer.',
+'Se Farhaan! Apre Umra, ale vizit Medin. Enn lapriyer dan Moske Prophet pli bon ki mil lapriyer ailer, sauf dan Masjid al-Haram.',
+'Se Rayhaan! Rapel, dan ihram bann zom met de morso tisi blan pa koud. Pena lasemiz, ni parfin apre ou finn fer lintansyon.',
+'Se Ridwaan. Hajj enn devwar anver Allah pou sa ki kapav fer vwayaz la. Prepar ou byen e komans bonteng.',
+'Se Ayoob, pare pou ed ou. Gagn pasians kouma Prophet Ayyub. Lafoul ek lasaler se bann tes, ek pasians amenn lalez.',
+'Se Zaheer! Sa\'i ant Safa ek Marwa rapel kouma Hajar finn rod delo pou so garson. Allah finn fer li enn parmi Bann siny Li.',
+'Se Imran. Zour Arafa se pli gran zour: Allah liber plis dimounn dan dife dan sa zour la ki nenport ki lot zour.',
+'Se Hamza! Fini Hajj ek Umra pou Allah, pa pou montre. Demann Li aksepte sa depi ou.',
+'Se Yasin. Bwar Zamzam dan Lamek ek enn bon lintansyon. Li pou sa ki ou bwar li pou.',
+'Se Nabil! Apre tawaf, fer de rakat deryer Maqam Ibrahim. Pran ou letan e pa pous personn.',
+'Se Sofiyan! Kan ou fini Umra, bann zom rase ouswa kourt zot seve. Prophet finn priye pou bann ki rase, ek osi pou bann ki kourt.',
+'Bienveni dan bazar Por Lwi! Tisi ihram, sentir larzan, savon san parfin ek tapi lapriyer. Ki ou bizin?',
+'Salie ek salam, dir souple ek mersi, apre fer enn ofer zis. Gentiyes diminie pri, me pa anba sa ki zis.',
+'Montre mwa ou marsandiz ek mo pou marsande','Ena konsey pou marsande?','Montre mwa bann marsandiz',
+'Bienveni dan lazans. Mo verifie ki ou paspor valab sis mwa apre ou dat vwayaz, apre mo travay lor ou viza.',
+'Ou paspor ekspir le','Mo pankor ena ou dat ekspirasyon paspor.',
+'Ou viza finn aprouve. Anou rezerv ou avion depi Aeroport SSR (MRU) pou Jeddah ek swazir enn plas.',
+'Tou pare. Ou karte bordaz finn emet. Ale kot laport aeroport kan ou valiz pare.',
+'Montre mo karte bordaz','Komans demann viza','Rezerv avion ek plas','Ekout','Lang konversasyon',
+'Montre mwa wudhu ek lapriyer etap par etap',
+'Assalamu alaykum, se Nasseer! Aprann wudhu ek lapriyer avan, apre tawaf ek sa\'i. Pratik sakenn etap dousman ziska li vinn fasil.'];
+if(MFE_ROWS.length!==DT_ROWS.length)console.warn('MFE rows mismatch',MFE_ROWS.length,DT_ROWS.length);
+DT_ROWS.forEach((r,i)=>{if(MFE_ROWS[i]){(DT[r[0]]=DT[r[0]]||{}).mfe=MFE_ROWS[i];}});
+// guide captions
+const MFE_G={
+ wudhu:{intent:'Fer lintansyon dan ou leker ek dir Bismillah.',hands:'Lav de lamen ziska poignet, trwa fwa.',mouth:'Rins ou labous trwa fwa.',nose:'Rennifle delo dan ou nen ek soufle li deor, trwa fwa.',face:'Lav ou figir trwa fwa.',arms:'Lav ou lebra drwat ziska koud, apre gos, trwa fwa sakenn.',head:'Pas ou lamen mouye lor ou latet enn fwa, apre lor lorey.',feet:'Lav ou lipie drwat ziska sevilye, apre gos, trwa fwa sakenn.',dua:'Fini ek dua shahada la.'},
+ salah:{qibla:'Fer fas lor kibla ek fer lintansyon dan ou leker.',takbir:'Dir Allahu Akbar, lev ou lame, apre met zot lor ou lapwatrin.',fatiha:'Resit Al-Fatiha, apre enn ti sourat.',ruku:'Dir Allahu Akbar ek bes, do drwat. Glorifie ou Rab.',qauma:'Lev ou kor an dizan Sami Allahu liman hamidah.',sujud:'Dir Allahu Akbar ek fer sujud: fron, nen, lapom lamen, zenou ek ledwa lipie.',jalsa:'Asize enn moman ek demann pardon, apre fer sujud ankor.',tashahhud:'Apre dezyem rakat, asize pou tashahhud ek salawat lor Prophet.',taslim:'Fini ek donn salam lor drwat apre lor gos.'},
+ tawaf:{talb:'Resit talbiyah ziska ou ariv kot Kaaba, apre komans tawaf.',idtiba:'Bann zom dekouvr lepol drwat (idtiba) pou sa tawaf la.',stone:'Komans kot Ros Nwar: touss ouswa montre, ek dir Allahu Akbar.',round:'Gard Kaaba lor ou gos ek fer tour dan sans invers lamontr, set tour.',yemeni:'Ant Kwin Yemeni ek Ros Nwar dir Rabbana atina.',maqam:'Apre set tour, fer de rakat deryer Maqam Ibrahim.',zamzam:'Bwar Zamzam ek enn bon lintansyon.'},
+ sai:{safa:'Ale Safa, ek resit Innas-Safa wal-Marwata min shaairillah.',dua:'Lor Safa, fer fas Kaaba, lev ou lame ek fer dua.',walk:'Mars ziska Marwa. Bann zom galoup lezerman ant bann lalimier ver.',marwa:'Lor Marwa, fer fas Kaaba ek fer dua. Sa enn tour.',seven:'Fini set tour, terminn lor Marwa.',halq:'Bann zom rase ouswa kourt seve. Bann fam kourt enn bout lizwa. Umra fini.'}};
+for(const j in MFE_G)GUIDE[j].steps.forEach(st=>{if(MFE_G[j][st.k])st.cap.mfe=MFE_G[j][st.k];else console.warn('no mfe',j,st.k);});
+// quiz
+const QMFE=['Konbien fwa bann pelren mars otour Kaaba dan tawaf?','Ant ki de lakolin dimounn fer sa\'i?','Ki non bann linz blan ki pelren mete?','Ki pwi beni ki dan Masjid al-Haram?','Konbien pilye Lislam ena?','Ki mo ki talbiyah komans ek?','Kikenn ki finn lev fondasyon Kaaba ek so garson Ismail?','Dan ki lavil Moske Prophet ete?','Ki nou dir kan nou komans enn aksyon, kouma manze?','Ki ros dimounn bez ouswa montre dan kwin Kaaba?'];
+QB.forEach((q,i)=>{q.mfe=QMFE[i];});
+Object.assign(LN,{mfe:'Kreol Morisien'});
+Object.assign(DLOC,{mfe:'fr-FR'});
+Object.assign(LOCS,{mfe:'fr-FR'});
+
+T3('Tell me about hiking and fitness','Parle-moi de randonnée et de forme physique','Koz mwa lor marse montay ek fitness');
+T3('Aman the hiker: on the trail to Le Morne, say Allahu Akbar when climbing up and SubhanAllah when coming down. Walk daily, because tawaf and sa\'i are long walks.','Aman le randonneur : sur le sentier du Morne, dis Allahu Akbar en montant et SubhanAllah en descendant. Marche chaque jour, car le tawaf et le sa\'i sont de longues marches.','Aman, ladepann: lor santye Le Morne, dir Allahu Akbar kan ou monte ek SubhanAllah kan ou desann. Marse touzour, parski tawaf ek sa\'i bann long marse.');
+T3('Teach me eating manners','Apprends-moi les bonnes manières à table','Aprann mwa manyer manze');
+T3('Jameel the cook: say Bismillah, eat with your right hand, and eat from what is in front of you. Good briani and dholl puri taste better with gratitude.','Jameel le cuisinier : dis Bismillah, mange de la main droite et de ce qui est devant toi. Le bon briani et le dholl puri ont meilleur goût avec la gratitude.','Jameel, kwizinie: dir Bismillah, manze ek lamen drwat ek manze sa ki devan ou. Bon biryani ek dholl puri pli bon ek rekonesans.');
+T3('Take me fishing tips','Donne-moi des conseils de pêche','Donn mwa bann konsey lapes');
+T3('Farhaan the fisherman: begin with Bismillah, be patient with the line, and thank Allah for whatever He provides. Fish from the Blue Bay pier at sunrise.','Farhaan le pêcheur : commence par Bismillah, sois patient avec la ligne et remercie Allah pour ce qu\'Il t\'accorde. Pêche depuis la jetée de Blue Bay au lever du soleil.','Farhaan, pesker: komans ek Bismillah, ena pasians ek lalinn, ek remersie Allah pou sa ki Li donn ou. Pes lor ponn Blue Bay dan lasoleil leve.');
+T3('Salaam! Bilal here. Naat and cars are my passion. Play some naat while you drive, and lower the exhaust near a masjid so we do not disturb the neighbours.','Salaam ! Bilal ici. Les naats et les voitures sont ma passion. Mets un naat en conduisant, et baisse l\'échappement près d\'une mosquée pour ne pas déranger les voisins.','Salaam! Se Bilal. Naat ek loto se mo pasyon. Met enn naat kan ou pe kondir, ek bes son lekzos pre enn moske pou pa deranze bann voizin.');
+T3('Azhar, your luggage master. Airlines allow 23 kilograms. Pack ihram, sandals, unscented soap and a money belt, and weigh your bag before the airport.','Azhar, le maître des bagages. Les compagnies autorisent 23 kilos. Emporte l\'ihram, des sandales, du savon non parfumé et une ceinture porte-monnaie, et pèse ta valise avant l\'aéroport.','Azhar, met bagaz. Konpayni avion donn 23 kilo. Pran ihram, sandal, savon san parfin ek enn sentir larzan, ek pez ou valiz avan aeroport.');
+T3('Imteeaz, captain of the five-a-side team. When the adhan sounds, we stop the match at once and go to pray. Salah comes first.','Imteeaz, capitaine de l\'équipe de foot à cinq. Quand l\'adhan retentit, nous arrêtons le match aussitôt et allons prier. La salat passe avant tout.','Imteeaz, kapitenn lekip foutbol a sink. Kan ladan sone, nou aret match la touswit ek al priye. Lapriyer vini avan tou.');
+T3('Ajmal here, I study the Quran. Ask me for a story: Yunus in the whale, or Hajar at Zamzam.','Ajmal ici, j\'étudie le Coran. Demande-moi une histoire : Yunus dans la baleine, ou Hajar à Zamzam.','Se Ajmal, mo etidye Koran. Demann mwa enn zistwar: Yunus dan labalenn, ouswa Hajar kot Zamzam.');
+T3('The story of Yunus','L\'histoire de Yunus','Zistwar Yunus');T3('The story of Hajar at Zamzam','L\'histoire de Hajar à Zamzam','Zistwar Hajar kot Zamzam');
+T3('Yunus called out in the darkness: La ilaha illa anta, subhanaka, inni kuntu minaz-zalimin. Allah answered him and saved him from distress.','Yunus appela dans les ténèbres : La ilaha illa anta, subhanaka, inni kuntu minaz-zalimin. Allah lui répondit et le sauva de la détresse.','Yunus finn apel dan tenebr: La ilaha illa anta, subhanaka, inni kuntu minaz-zalimin. Allah finn reponn li ek sov li depi so detres.');
+T3('Hajar ran between Safa and Marwa looking for water for her son Ismail. Allah brought out Zamzam, and we remember her in the sa\'i.','Hajar courut entre Safa et Marwa à la recherche d\'eau pour son fils Ismaïl. Allah fit jaillir Zamzam, et nous nous souvenons d\'elle dans le sa\'i.','Hajar finn galoupe ant Safa ek Marwa pou rod delo pou so garson Ismail. Allah finn fer Zamzam sorti, ek nou rapel li dan sa\'i.');
+T3('Salaam! I am Aman. Before any trip, the Prophet taught us a travel dua. Say it as you board: Subhana alladhi sakhkhara lana hadha.',DT['Salaam! I am Aman. Before any trip, the Prophet taught us a travel dua. Say it as you board: Subhana alladhi sakhkhara lana hadha.'].fr,DT['Salaam! I am Aman. Before any trip, the Prophet taught us a travel dua. Say it as you board: Subhana alladhi sakhkhara lana hadha.'].mfe);
 
 if(!I18N[S.lang])S.lang='en';
 render();
