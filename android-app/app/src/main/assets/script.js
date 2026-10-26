@@ -2649,6 +2649,324 @@ Object.assign(A,{
 document.addEventListener('input',e=>{if(e.target.id==='simr'){S.simH=+e.target.value;save();_lastH=S.simH;}});
 document.addEventListener('change',e=>{if(e.target.id==='simr'){render();}});
 
+
+/* ================= Phase 3 and 4: garage, driving, brotherhood mini-games ================= */
+const VEH=[
+ {id:'hatch',n:'Hatchback',p:0,k:'hatch'},{id:'sedan',n:'Sedan',p:200,k:'sedan'},{id:'suv',n:'SUV',p:300,k:'suv'},{id:'van',n:'7-seater minivan (family travel)',p:260,k:'van'},
+ {id:'pick',n:'Pickup truck',p:280,k:'pick'},{id:'moto',n:'Motorcycle',p:90,k:'moto'},{id:'bike',n:'Sport bike',p:220,k:'bike'},{id:'super',n:'Supercar',p:600,k:'super'}];
+const PAINTS=[['Gloss metallic blue','#1F6FEB','gloss'],['Candy pearl pink','#D81B7A','candy'],['Satin green','#1F8A5F','satin'],['Matte charcoal','#3B3F44','matte'],['Chameleon flip','#7B2FF7','cham'],['Two-tone white and carbon','#F2F2EE','two']];
+const LIGHTS=[['None',''],['Green underglow','#22E58A'],['Blue underglow','#35A7FF'],['Pulse (breathing) violet','#B25CFF']];
+const WHEELS=['Stock','Deep-dish forged'],STANCES=['Stock','Sport','Slammed'],CALIP=['#D32F2F','#FBC02D','#1E88E5'];
+const ACCS=[['tasbih','Hanging tasbih on the mirror'],['dua','Du’a as-safar dashboard display'],['tint','Privacy window tint'],['drl','Angel-eye DRL rings and matrix LED'],['tail','Smoked sequential tail-lights']];
+function vehS(){if(!S.veh)S.veh={owned:{hatch:1},cur:'hatch',cfg:{}};return S.veh;}
+function vcfg(id){const v=vehS();return v.cfg[id]||(v.cfg[id]={paint:0,light:0,exh:0,wheel:0,stance:0,cal:0,acc:{tasbih:1,dua:1}});}
+const KD={hatch:{L:150,H:34,rs:46,re:104,rh:30},sedan:{L:178,H:30,rs:52,re:128,rh:28},suv:{L:166,H:42,rs:34,re:128,rh:34},van:{L:182,H:46,rs:24,re:156,rh:36},pick:{L:186,H:40,rs:30,re:90,rh:32},super:{L:178,H:24,rs:62,re:122,rh:20}};
+function paintFill(ctx,x,y,w,h,pt,t){
+  const c=pt[1],k=pt[2];
+  if(k==='cham'){const a=(Math.sin(t*1.4)+1)/2,c1=[123,47,247],c2=[0,200,160],m=c1.map((v,i)=>Math.round(v+(c2[i]-v)*a));return lg(ctx,x,y,x+w,y+h,['rgb('+m+')',shade('#'+m.map(v=>v.toString(16).padStart(2,'0')).join(''),.7)]);}
+  if(k==='matte'||k==='satin')return lg(ctx,x,y,x,y+h,[shade(c,1.05),shade(c,.9)]);
+  if(k==='candy')return lg(ctx,x,y,x+w,y+h,['#FF8FC0',c,'#7A0B44']);
+  return lg(ctx,x,y,x,y+h,[shade(c,1.35),c,shade(c,.62)]);
+}
+function drawVeh(ctx,W,Hh,v,cf,t,fx){
+  const gy=Hh*.78,pt=PAINTS[cf.paint],lift=cf.stance===2?-1:cf.stance===1?3:7;
+  ctx.fillStyle=lg(ctx,0,gy-30,0,Hh,['#E9E3D0','#C9C2AB']);ctx.fillRect(0,gy-4,W,Hh-gy+4);
+  const ug=LIGHTS[cf.light][1];
+  const rear=!!v.k.match(/moto|bike/);
+  if(!rear){
+    const d=KD[v.k],x0=(W-d.L)/2,top=gy-d.H-lift-14,yb=gy-lift-14,r=cf.wheel?15:13,wy=gy-r+2;
+    ctx.fillStyle='rgba(20,30,20,.28)';ctx.beginPath();ctx.ellipse(W/2,gy+4,d.L*.58,7,0,0,6.3);ctx.fill();
+    if(ug){const a=cf.light===3?.35+.3*Math.sin(t*3):.55;ctx.fillStyle=ug;ctx.globalAlpha=a;ctx.beginPath();ctx.ellipse(W/2,gy+2,d.L*.62,10,0,0,6.3);ctx.fill();ctx.globalAlpha=1;}
+    // cabin and body
+    const cab=[[x0+d.rs,top],[x0+d.re,top],[x0+d.re+(v.k==='pick'?0:16),yb-d.H*.12],[x0+d.rs-14,yb-d.H*.12]];
+    if(v.k==='pick'){poly(ctx,[[x0+d.rs,top],[x0+d.re,top],[x0+d.re,yb],[x0+d.rs-10,yb]],paintFill(ctx,x0,top,d.L,d.H,pt,t));
+      ctx.fillStyle=shade(pt[1],.6);ctx.fillRect(x0+d.re+4,top+d.H*.35,d.L-d.re-8,d.H*.65-4);}
+    else poly(ctx,cab,pt[2]==='two'?'#2B2E31':paintFill(ctx,x0,top,d.L,d.H,pt,t));
+    ctx.beginPath();ctx.fillStyle=paintFill(ctx,x0,top+d.H*.3,d.L,d.H*.7,pt,t);
+    const bx=x0,by=yb-d.H*.5,bw=d.L,bh=d.H*.62;ctx.roundRect?ctx.roundRect(bx,by,bw,bh,10):ctx.rect(bx,by,bw,bh);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.18)';ctx.fillRect(bx+8,by+3,bw-16,3);
+    // windows
+    const tint=cf.acc.tint;ctx.fillStyle=tint?'rgba(20,28,36,.92)':'rgba(170,215,240,.9)';
+    const wx0=x0+d.rs+4,wx1=x0+d.re-2,wy0=top+3,wy1=yb-d.H*.18;
+    if(v.k!=='pick'||true){poly(ctx,[[wx0+(v.k==='pick'?4:0),wy0],[(v.k==='pick'?x0+d.re-4:wx1),wy0],[(v.k==='pick'?x0+d.re-4:wx1+10),wy1],[wx0-10,wy1]],ctx.fillStyle);}
+    ctx.fillStyle=pt[1];ctx.fillRect((wx0+wx1)/2,wy0,2.5,wy1-wy0);
+    if(cf.acc.tasbih){ctx.strokeStyle='#F4D35E';ctx.lineWidth=1.5;const sw=Math.sin(t*3)*1.5;ctx.beginPath();ctx.moveTo(wx1-6,wy0+2);ctx.lineTo(wx1-6+sw,wy0+11);ctx.stroke();ctx.fillStyle='#0F7A5B';for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(wx1-6+sw,wy0+9+i*2.5,1.4,0,6.3);ctx.fill();}}
+    // lights
+    ctx.fillStyle='#FFF6C8';ctx.beginPath();ctx.ellipse(x0+bw-4,by+8,5,3.5,0,0,6.3);ctx.fill();
+    if(cf.acc.drl){ctx.strokeStyle='#DDF3FF';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(x0+bw-12,by+8,5,0,6.3);ctx.stroke();}
+    ctx.fillStyle=cf.acc.tail?'#5a0a0a':'#E53935';ctx.fillRect(x0-1,by+4,6,7);
+    if(cf.acc.tail){const q=Math.floor(t*6)%3;ctx.fillStyle='#FF5252';ctx.fillRect(x0-1,by+4+q*2.4,6,2.4);}
+    // exhaust
+    ctx.fillStyle='#777';ctx.fillRect(x0-7,by+bh-6,10,4);
+    if(cf.exh){ctx.fillStyle='#FF8A3D';ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(x0-8,by+bh-4,3,0,6.3);ctx.fill();ctx.globalAlpha=1;if(fx&&fx.flame>0){ctx.fillStyle='#4FC3F7';ctx.beginPath();ctx.ellipse(x0-18,by+bh-4,14*fx.flame,4,0,0,6.3);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x0-14,by+bh-4,6*fx.flame,2,0,0,6.3);ctx.fill();}}
+    // wheels
+    for(const wx of[x0+d.L*.2,x0+d.L*.8]){
+      ctx.fillStyle='#1c1c1c';ctx.beginPath();ctx.arc(wx,wy,r,0,6.3);ctx.fill();
+      ctx.fillStyle=cf.wheel?'#E8E8E8':'#9EA3A8';ctx.beginPath();ctx.arc(wx,wy,r*(cf.wheel?.78:.55),0,6.3);ctx.fill();
+      if(cf.wheel){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(wx,wy,r*.8,0,6.3);ctx.stroke();ctx.fillStyle=CALIP[cf.cal||0];ctx.fillRect(wx-r*.2,wy-r*.7,r*.4,r*.25);}
+      ctx.strokeStyle='#555';ctx.lineWidth=1.6;const a=(fx&&fx.spin||0);for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(wx,wy);ctx.lineTo(wx+Math.cos(a+i*1.256)*r*.7,wy+Math.sin(a+i*1.256)*r*.7);ctx.stroke();}
+      ctx.fillStyle='#333';ctx.beginPath();ctx.arc(wx,wy,2.4,0,6.3);ctx.fill();}
+  }else{
+    const cx=W/2,r=cf.wheel?15:13,wy=gy-r+2-(cf.stance===2?-1:0);
+    ctx.fillStyle='rgba(20,30,20,.28)';ctx.beginPath();ctx.ellipse(cx,gy+4,90,6,0,0,6.3);ctx.fill();
+    if(ug){ctx.fillStyle=ug;ctx.globalAlpha=.5;ctx.beginPath();ctx.ellipse(cx,gy+2,92,8,0,0,6.3);ctx.fill();ctx.globalAlpha=1;}
+    const sp=v.k==='bike';
+    for(const wx of[cx-58,cx+58]){ctx.fillStyle='#1c1c1c';ctx.beginPath();ctx.arc(wx,wy,r+(sp?0:1),0,6.3);ctx.fill();ctx.fillStyle=cf.wheel?'#E8E8E8':'#9EA3A8';ctx.beginPath();ctx.arc(wx,wy,r*.6,0,6.3);ctx.fill();ctx.strokeStyle='#555';ctx.lineWidth=1.5;const a=(fx&&fx.spin||0);for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(wx,wy);ctx.lineTo(wx+Math.cos(a+i*1.57)*r*.6,wy+Math.sin(a+i*1.57)*r*.6);ctx.stroke();}}
+    ctx.strokeStyle='#333';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(cx-58,wy);ctx.lineTo(cx-8,wy-26);ctx.lineTo(cx+40,wy-30);ctx.lineTo(cx+58,wy);ctx.stroke();
+    poly(ctx,sp?[[cx-22,wy-36],[cx+34,wy-46],[cx+52,wy-28],[cx-6,wy-24]]:[[cx-10,wy-42],[cx+30,wy-44],[cx+36,wy-28],[cx-8,wy-24]],paintFill(ctx,cx-20,wy-46,70,24,pt,t));
+    ctx.fillStyle='#2B2E31';ctx.fillRect(cx-44,wy-40,34,8);
+    ctx.fillStyle='#FFF6C8';ctx.beginPath();ctx.ellipse(cx+46,wy-32,4,3,0,0,6.3);ctx.fill();
+    ctx.fillStyle='#777';ctx.fillRect(cx-78,wy-8,26,4);
+    if(cf.exh&&fx&&fx.flame>0){ctx.fillStyle='#4FC3F7';ctx.beginPath();ctx.ellipse(cx-86,wy-6,14*fx.flame,3,0,0,6.3);ctx.fill();}
+    if(cf.acc.tasbih){ctx.fillStyle='#0F7A5B';ctx.beginPath();ctx.arc(cx+40,wy-52,2.4,0,6.3);ctx.fill();}
+  }
+}
+/* ---------- engine audio ---------- */
+let ENG=null;
+function engStart(open){
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();engStop();
+    const o1=AC.createOscillator(),o2=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o1.type='sawtooth';o2.type='square';o2.detune.value=-1200;f.type='lowpass';o1.connect(f);o2.connect(f);f.connect(g);g.connect(AC.destination);o1.start();o2.start();ENG={o1,o2,f,g,open};engSet(0,open);}catch(e){}
+}
+function engSet(r,open){if(!ENG)return;ENG.open=open;const t=AC.currentTime,fr=38+r*120;ENG.o1.frequency.setTargetAtTime(fr,t,.08);ENG.o2.frequency.setTargetAtTime(fr,t,.08);ENG.f.frequency.setTargetAtTime(open?900+r*1800:260+r*180,t,.08);ENG.g.gain.setTargetAtTime(open?.09+r*.07:.02+r*.02,t,.08);}
+function engStop(){if(!ENG)return;try{ENG.o1.stop();ENG.o2.stop();}catch(e){}ENG=null;}
+function backfire(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const n=AC.sampleRate*.12,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=b;f.type='bandpass';f.frequency.value=700;g.gain.value=.5;s.connect(f);f.connect(g);g.connect(AC.destination);s.start();}catch(e){}}
+
+/* ---------- garage ---------- */
+let GRG=null;
+function vGarage(){
+  const v=vehS(),cur=VEH.find(x=>x.id===v.cur)||VEH[0],cf=vcfg(cur.id);
+  const sel=(a,name,arr,val,lab)=>`<div class="row wrap"><span class="small"><b>${name}</b></span>${arr.map((x,i)=>`<button class="chip${val===i?' sel':''}" data-a="gset" data-f="${a}" data-v="${i}">${esc(lab?lab(x):x)}</button>`).join('')}</div>`;
+  return `<div class="card"><div class="row between"><h1>Garage</h1><span class="tag">${esc(cur.n)}</span></div>
+  <canvas id="gcv" width="360" height="190" class="gcv" aria-label="Your vehicle"></canvas>
+  <div class="row wrap"><button class="btn primary" data-a="gdrive">🚗 Drive to the masjid</button><button class="btn" data-a="grev">🔊 Rev the engine</button></div></div>
+  <div class="card"><h2>Customise</h2>
+  ${sel('paint','Paint',PAINTS,cf.paint,x=>x[0])}${sel('light','Underglow',LIGHTS,cf.light,x=>x[0])}${sel('wheel','Wheels',WHEELS,cf.wheel)}${sel('stance','Stance',STANCES,cf.stance)}${cf.wheel?sel('cal','Brake calipers',['Red','Yellow','Blue'],cf.cal||0):''}
+  <div class="row wrap"><span class="small"><b>Exhaust cut-off valve</b></span><button class="chip${cf.exh?' sel':''}" data-a="gset" data-f="exh" data-v="1">Open: loud</button><button class="chip${!cf.exh?' sel':''}" data-a="gset" data-f="exh" data-v="0">Closed: polite</button></div>
+  <p class="small muted">The valve closes by itself near any masjid: Baisse son l’échappement, l’Islam enseigne nou pas dérange voisin.</p>
+  <div class="row wrap"><span class="small"><b>Accessories</b></span>${ACCS.map(a=>`<button class="chip${cf.acc[a[0]]?' sel':''}" data-a="gacc" data-v="${a[0]}">${esc(a[1])}</button>`).join('')}</div></div>
+  <div class="card"><h2>Dealership</h2><p class="small muted">Your credits: ${S.credits}. Park considerately and never let driving delay a prayer.</p>
+  ${VEH.map(x=>{const own=v.owned[x.id];return `<div class="row between vrow"><span>${esc(x.n)} <span class="muted small">${own?'owned':x.p+' credits'}</span></span>${own?`<button class="chip${v.cur===x.id?' sel':''}" data-a="gpick" data-v="${x.id}">${v.cur===x.id?'In use':'Use'}</button>`:`<button class="chip" data-a="gbuy" data-v="${x.id}"${S.credits<x.p?' disabled':''}>Buy</button>`}</div>`;}).join('')}</div>`;
+}
+VIEWS.garage=vGarage;I18N.en.garage='Garage';I18N.en.fun='Brotherhood';
+function garageStart(){
+  const cv=document.getElementById('gcv');if(!cv)return;cancelAnimationFrame(GRG);let t0=performance.now(),fx={spin:0,flame:0};GRG={fx};
+  const ctx=cv.getContext('2d');
+  const f=now=>{if(!document.getElementById('gcv')){GRG=null;return;}const t=(now-t0)/1000,v=VEH.find(x=>x.id===vehS().cur)||VEH[0],cf=vcfg(v.id);fx.spin+=.05;fx.flame=Math.max(0,fx.flame-.04);
+    ctx.clearRect(0,0,360,190);ctx.fillStyle=lg(ctx,0,0,0,150,['#BFE3F5','#F7EBC8']);ctx.fillRect(0,0,360,190);drawVeh(ctx,360,190,v,cf,t,fx);requestAnimationFrame(f);};
+  requestAnimationFrame(f);
+}
+const _render=render;
+render=function(){_render();if(tab==='garage')garageStart();};
+Object.assign(A,{
+  gset(el){const cf=vcfg(vehS().cur);cf[el.dataset.f]=+el.dataset.v;save();render();},
+  gacc(el){const cf=vcfg(vehS().cur);cf.acc[el.dataset.v]=cf.acc[el.dataset.v]?0:1;save();render();},
+  gpick(el){vehS().cur=el.dataset.v;save();render();},
+  gbuy(el){const x=VEH.find(y=>y.id===el.dataset.v);if(S.credits<x.p){toast('Not enough credits.');return;}S.credits-=x.p;vehS().owned[x.id]=1;vehS().cur=x.id;save();chime(520,.2);toast(x.n+' is yours');render();},
+  grev(){const cf=vcfg(vehS().cur);engStart(!!cf.exh);let r=0;const iv=setInterval(()=>{r+=.25;engSet(Math.min(1,r),!!cf.exh);if(r>=1.5){if(cf.exh){if(GRG)GRG.fx.flame=1;backfire();}}if(r>=2){clearInterval(iv);setTimeout(engStop,300);}},180/FAST);},
+  gdrive(){driveStart();}
+});
+/* ---------- drive to the masjid ---------- */
+let DR=null;
+const DR_LEN=900;
+function driveStart(){
+  const v=VEH.find(x=>x.id===vehS().cur)||VEH[0],cf=vcfg(v.id);
+  DR={v,cf,lane:1,x:1,spd:0,gas:false,dist:0,hearts:3,obs:[],tm:0,stage:'drive',park:0,flash:0,fx:{spin:0,flame:0},closed:false,over:false};
+  const d=document.createElement('div');d.id='drv';document.body.appendChild(d);
+  d.innerHTML=`<div class="adhbox drvbox"><div class="row between"><b>Port Louis to Jummah Mosque</b><button class="chip" data-a="drvx">✕</button></div>
+  <div class="small" id="drvdua"><span class="ar" dir="rtl">سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ</span><br>Du’a as-safar (Sahih Muslim 1342)</div>
+  <canvas id="drvcv" width="320" height="320"></canvas><div class="adhbar"><i id="drvgps" style="background:#18b66a;width:0%"></i></div>
+  <div class="small" id="drvmsg">Green route to the nearest Sunni masjid. Hold Gas, tap arrows to change lane. Never speed.</div>
+  <div class="row"><button class="btn" data-a="drvl">◀</button><button class="btn primary" id="drvgas">Gas</button><button class="btn" data-a="drvr">▶</button></div>
+  <div id="drvpark"></div></div>`;
+  speak('سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ','ar-SA',.8,'m');
+  const g=document.getElementById('drvgas');const on=e=>{DR&&(DR.gas=true);e.preventDefault();},off=()=>{DR&&(DR.gas=false);};
+  g.addEventListener('pointerdown',on);g.addEventListener('pointerup',off);g.addEventListener('pointerleave',off);g.addEventListener('pointercancel',off);
+  engStart(!!cf.exh);DR.last=performance.now();DR.raf=requestAnimationFrame(driveLoop);
+}
+function driveLoop(now){
+  if(!DR||!document.getElementById('drvcv'))return;DR.raf=requestAnimationFrame(driveLoop);
+  const dt=Math.min(.05,(now-DR.last)/1000);DR.last=now;
+  const paused=!!ADHAN;
+  if(DR.stage==='drive'&&!paused){
+    const prev=DR.spd;DR.spd+=(DR.gas?1:-1.4)*dt*(DR.v.k==='super'?1.1:.7);DR.spd=Math.max(0,Math.min(1,DR.spd));
+    if(DR.cf.exh&&prev>.5&&DR.spd<prev-.012&&!DR.gas&&Math.random()<.25){DR.fx.flame=1;backfire();}
+    DR.dist+=DR.spd*dt*(FAST>1?160:70);DR.tm+=dt;DR.x+=(DR.lane-DR.x)*Math.min(1,dt*9);
+    if(Math.random()<dt*(.5+DR.spd*1.4)&&DR.obs.length<4)DR.obs.push({l:Math.floor(Math.random()*3),y:-40,c:['#c33','#37a','#888','#d90'][Math.floor(Math.random()*4)]});
+    for(const o of DR.obs){o.y+=(DR.spd*260+60)*dt;if(!o.hit&&o.l===DR.lane&&o.y>228&&o.y<290&&DR.flash<=0){o.hit=1;DR.hearts--;DR.flash=1;buzz(60);chime(180,.2);}}
+    DR.obs=DR.obs.filter(o=>o.y<340);DR.flash-=dt;
+    if(!DR.closed&&DR.dist>DR_LEN*.8){DR.closed=true;DR.cf.exh=0;save();const m=document.getElementById('drvmsg');if(m)m.textContent='Masjid ahead: your exhaust valve closed itself. Baisse son l’échappement, l’Islam enseigne nou pas dérange voisin.';toast('Exhaust valve closed near the masjid');}
+    engSet(DR.spd,!!DR.cf.exh);
+    document.getElementById('drvgps').style.width=Math.min(100,DR.dist/DR_LEN*100)+'%';
+    if(DR.hearts<=0){driveEnd(false);return;}
+    if(DR.dist>=DR_LEN){DR.stage='park';DR.spd=0;engSet(0,!!DR.cf.exh);driveParkUi();}
+  }
+  DR.fx.flame=Math.max(0,DR.fx.flame-dt*3);DR.fx.spin+=DR.spd*.5;
+  driveDraw();
+}
+function driveDraw(){
+  const c=document.getElementById('drvcv'),ctx=c.getContext('2d');ctx.clearRect(0,0,320,320);
+  ctx.fillStyle='#7DB566';ctx.fillRect(0,0,320,320);ctx.fillStyle='#5f6469';ctx.fillRect(40,0,240,320);
+  ctx.fillStyle='#F6F1DF';const off=(DR.dist*6)%40;for(const x of[120,200])for(let y=-40;y<340;y+=40)ctx.fillRect(x-2,y+off,4,20);
+  ctx.fillStyle='#18b66a';ctx.globalAlpha=.35;ctx.fillRect(157,0,6,320);ctx.globalAlpha=1;
+  if(DR.stage==='drive'&&DR.dist>DR_LEN*.8){ctx.fillStyle='#E9DFC4';ctx.fillRect(40,0,240,40);ctx.fillStyle='#0b5d47';ctx.font='12px sans-serif';ctx.fillText('MASJID ZONE · ENGINE QUIET',70,24);}
+  for(const o of DR.obs){const x=80+o.l*80;ctx.fillStyle=o.c;ctx.beginPath();ctx.roundRect?ctx.roundRect(x-16,o.y,32,52,6):ctx.rect(x-16,o.y,32,52);ctx.fill();ctx.fillStyle='#bde';ctx.fillRect(x-11,o.y+8,22,12);}
+  const px=80+DR.x*80,pc=PAINTS[DR.cf.paint][1];
+  if(DR.flash>0&&Math.floor(DR.flash*10)%2)ctx.globalAlpha=.4;
+  ctx.fillStyle=pc;ctx.beginPath();ctx.roundRect?ctx.roundRect(px-16,240,32,52,6):ctx.rect(px-16,240,32,52);ctx.fill();ctx.fillStyle='#bde';ctx.fillRect(px-11,252,22,12);ctx.fillStyle='#222';ctx.fillRect(px-19,246,4,12);ctx.fillRect(px+15,246,4,12);ctx.fillRect(px-19,274,4,12);ctx.fillRect(px+15,274,4,12);
+  if(DR.fx.flame>0){ctx.fillStyle='#4FC3F7';ctx.beginPath();ctx.ellipse(px,298+12*DR.fx.flame,5,12*DR.fx.flame,0,0,6.3);ctx.fill();}
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.fillText('♥'.repeat(Math.max(0,DR.hearts)),8,18);ctx.fillText(Math.round(DR.spd*80)+' km/h',250,18);
+  if(DR.stage==='park'||DR.stage==='done'){ctx.fillStyle='#e9e4cf';ctx.fillRect(40,60,240,200);ctx.strokeStyle='#fff';ctx.lineWidth=3;for(let i=0;i<3;i++)ctx.strokeRect(52+i*76,90,64,110);ctx.fillStyle=pc;const bx=DR.park>=1?52+76:150;ctx.fillRect(bx,DR.park>=1?105:230,32,52);ctx.fillStyle='#0b5d47';ctx.fillRect(48,62,224,14);}
+}
+function driveParkUi(){
+  document.getElementById('drvmsg').textContent='You arrived at the masjid car park. Park inside a marked bay.';
+  const p=document.getElementById('drvpark');p.innerHTML=`<button class="btn primary" data-a="drvpark" data-v="1">1. Park inside the marked bay</button>`;
+  document.getElementById('drvdua').innerHTML='';
+}
+function drvStep(n){
+  const p=document.getElementById('drvpark'),m=document.getElementById('drvmsg');if(!p||!DR)return;DR.park=n;
+  if(n===1){m.textContent='Parked neatly, not blocking others. Now switch the engine off.';p.innerHTML=`<button class="btn primary" data-a="drvpark" data-v="2">2. Engine off</button>`;}
+  else if(n===2){engStop();DR.cf.exh=0;save();m.textContent='Engine off, exhaust closed. Say the du’a on leaving the vehicle.';p.innerHTML=`<div class="ar" dir="rtl">بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ</div><div class="small">Bismillahi tawakkaltu ‘alallah, wa la hawla wa la quwwata illa billah (Sunan Abi Dawud 5095)</div><button class="btn primary" data-a="drvpark" data-v="3">3. Say it and go to the wudhu fountain</button>`;speak('بِسْمِ اللَّهِ تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ','ar-SA',.8,'m');}
+  else if(n===3){m.textContent='Ou pé passe pré ar enn la Caze d’Allah! Envie arété pou fer enn deux Rak’at Nafil? Leave your shoes on the rack, enter with the right foot.';p.innerHTML=`<button class="btn primary" data-a="drvpark" data-v="4">Pray 2 rak’ahs Tahiyyat al-Masjid</button><button class="btn" data-a="drvx">Not now</button>`;chime(660,.3);}
+  else if(n===4){const km=Math.round(DR.dist/10);S.credits+=15;save();driveEnd(true,true);}
+}
+function driveEnd(ok,pray){
+  const d=document.getElementById('drv');if(DR){cancelAnimationFrame(DR.raf);}engStop();DR=null;if(d)d.remove();
+  if(ok&&!pray){S.credits+=10;save();toast('+10 '+t('credits')+' safe arrival');}
+  else if(!ok)toast('You crashed too often. Drive calmly and try again.');
+  if(pray){toast('+15 '+t('credits'));if(!makruh(clock())){nafOpen('tah');}else toast('Forbidden time now: make dhikr instead.');}
+  const c=$('#credits');if(c)c.textContent=S.credits+' '+t('credits');
+}
+Object.assign(A,{
+  drvx(){if(DR)driveEnd(DR.stage==='park'||DR.stage==='done',false);},
+  drvl(){if(DR&&DR.stage==='drive')DR.lane=Math.max(0,DR.lane-1);},
+  drvr(){if(DR&&DR.stage==='drive')DR.lane=Math.min(2,DR.lane+1);},
+  drvpark(el){drvStep(+el.dataset.v);}
+});
+/* ---------- brotherhood hub and mini-games ---------- */
+function vFun(){
+  return `<div class="card"><h1>Brotherhood</h1><p class="muted">Mini-games with your friends. Earn credits, and remember: when the adhan sounds, everything stops for prayer.</p></div>`+
+  [['fish','🎣 Fishing with Farhaan','Hold to reel, keep the line tension in the green zone.'],['hike','⛰️ Le Morne hike with Aman','Tap left and right on the beat. Takbir going up, tasbih coming down.'],['ball','⚽ 5-a-side with Imteeaz','Time your shot. The match stops at the adhan.'],['food','🍛 Halal food with Jameel','Briani and dholl puri etiquette from the Sunnah.']]
+  .map(g=>`<div class="card"><b>${g[1]}</b><p class="small">${g[2]}</p><button class="btn primary" data-a="mg" data-v="${g[0]}">Play</button></div>`).join('');
+}
+VIEWS.fun=vFun;
+const _TB2=TABS;TABS=()=>{const a=_TB2();a.splice(a.indexOf('nawafil')+1,0,'garage','fun');return a;};
+let MG=null;
+function mgOpen(html){mgClose(true);const d=document.createElement('div');d.id='mgo';document.body.appendChild(d);d.innerHTML=`<div class="adhbox"><div class="row between"><b id="mgt"></b><button class="chip" data-a="mgx">✕</button></div>${html}</div>`;}
+function mgClose(q){if(MG&&MG.raf)cancelAnimationFrame(MG.raf);if(MG&&MG.timers)MG.timers.forEach(clearTimeout);MG=null;speechCancel();const d=document.getElementById('mgo');if(d)d.remove();}
+function mgWin(n,msg){const c=n;S.credits+=c;save();toast('+'+c+' '+t('credits'));chime(784,.25);const cr=$('#credits');if(cr)cr.textContent=S.credits+' '+t('credits');const b=document.getElementById('mgbody');if(b)b.innerHTML=`<p class="big2">${esc(msg)}</p><p class="good">+${c} ${esc(t('credits'))}</p><button class="btn primary" data-a="mgx">Done</button>`;}
+const SAY=(s,l,g)=>{speak(s,l||'en-GB',.95,g||'m');};
+/* fishing */
+function mgFish(){
+  mgOpen(`<canvas id="mgc" width="320" height="200"></canvas><div id="mgbody"><p id="mgm" class="small"></p><button class="btn primary" id="mgreel">Hold to reel</button></div>`);
+  document.getElementById('mgt').textContent='Fishing with Farhaan';
+  MG={k:'fish',phase:'wait',tens:.5,prog:0,pull:0,caught:0,t:0,timers:[],hold:false,slack:0};
+  const m=document.getElementById('mgm'),btn=document.getElementById('mgreel');
+  const wait=()=>{MG.phase='wait';m.textContent='Cast out. Wait for a bite...';MG.timers.push(setTimeout(()=>{if(!MG)return;MG.phase='fight';MG.prog=.15;MG.tens=.5;m.textContent='Fish on! Hold to reel, release to ease. Keep the line in the green zone.';chime(880,.2);buzz(60);},(1500+Math.random()*1500)/FAST));};
+  wait();
+  btn.addEventListener('pointerdown',e=>{if(MG)MG.hold=true;e.preventDefault();});['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev,()=>{if(MG)MG.hold=false;}));
+  let last=performance.now();
+  const f=now=>{if(!MG||MG.k!=='fish'||!document.getElementById('mgc'))return;MG.raf=requestAnimationFrame(f);const dt=Math.min(.05,(now-last)/1000)*(FAST>1?3:1);last=now;MG.t+=dt;
+    const c=document.getElementById('mgc').getContext('2d');c.fillStyle=lg(c,0,0,0,200,['#9fd8f4','#3AA0DD','#1C5F9E']);c.fillRect(0,0,320,200);c.fillStyle='#E2CF96';c.fillRect(0,0,320,40);
+    c.strokeStyle='#fff';c.lineWidth=1.5;c.beginPath();c.moveTo(40,30);c.lineTo(160+Math.sin(MG.t*2)*(MG.phase==='fight'?30:4),MG.phase==='fight'?60+MG.prog*100:120);c.stroke();
+    if(MG.phase==='fight'){
+      MG.pull=Math.sin(MG.t*3.1)*.6+Math.sin(MG.t*7.3)*.4;MG.tens+=((MG.hold?.9:.1)-MG.tens)*dt*1.1+MG.pull*dt*.5;MG.tens=Math.max(0,Math.min(1,MG.tens));
+      const inz=MG.tens>.3&&MG.tens<.7;if(MG.hold&&inz)MG.prog+=dt*.22;else if(MG.hold&&MG.tens>=.7)MG.prog-=dt*.03;else if(!MG.hold)MG.prog-=dt*.05;
+      if(MG.tens<.08){MG.slack+=dt;}else MG.slack=0;
+      c.fillStyle='#0b5d47';c.fillRect(250,20,16,140);c.fillStyle='#3be08b';c.fillRect(250,20+140*.3,16,140*.4);c.fillStyle='#fff';c.fillRect(246,20+140*(1-MG.tens)-2,24,5);
+      c.fillStyle='#fff';c.fillRect(20,176,200,8);c.fillStyle='#F4D35E';c.fillRect(20,176,200*Math.min(1,MG.prog),8);
+      c.fillStyle='#F2994A';c.beginPath();c.ellipse(160+Math.sin(MG.t*2)*30,60+MG.prog*100+20,18,8,0,0,6.3);c.fill();
+      if(MG.tens>=.97){MG.phase='lost';m.textContent='The line snapped. Ease off sooner. Try again.';MG.timers.push(setTimeout(()=>{if(MG&&MG.k==='fish')wait();},1400/FAST));}
+      else if(MG.slack>1.8||MG.prog<=0){MG.phase='lost';m.textContent='The fish got away. Try again.';MG.timers.push(setTimeout(()=>{if(MG&&MG.k==='fish')wait();},1400/FAST));}
+      else if(MG.prog>=1){MG.phase='won';MG.caught++;const n=MG.caught;m.textContent='Caught! '+n+'/3';chime(784,.25);
+        if(n>=3){SAY('Alhamdulillah! Let us grill it. Halal and tayyib.');mgWin(25,'Jameel fires up the grill: Bismillah, then we share the fish. Alhamdulillah!');}else MG.timers.push(setTimeout(()=>{if(MG&&MG.k==='fish')wait();},1200/FAST));}
+    }
+  };
+  MG.raf=requestAnimationFrame(f);
+}
+/* hiking */
+function mgHike(){
+  mgOpen(`<canvas id="mgc" width="320" height="180"></canvas><div id="mgbody"><p id="mgm" class="small">Aman: Tap left, then right, on the beat. Pace yourself.</p><div class="adhbar"><i id="mgp" style="width:0%"></i></div><div class="row"><button class="btn" id="mgL" data-a="hk1" data-v="L">Left foot</button><button class="btn" id="mgR" data-a="hk1" data-v="R">Right foot</button></div><div class="adhbar"><i id="mgs" style="width:100%;background:#d9822b"></i></div><div class="small muted">Stamina</div></div>`);
+  document.getElementById('mgt').textContent='Le Morne Brabant with Aman';
+  MG={k:'hike',step:0,need:24,stam:1,want:'L',beat:performance.now(),dir:1,timers:[]};
+  const f=now=>{if(!MG||MG.k!=='hike'||!document.getElementById('mgc'))return;MG.raf=requestAnimationFrame(f);
+    const per=650/(FAST>1?2:1),ph=((now-MG.beat)%per)/per,c=document.getElementById('mgc').getContext('2d');
+    c.fillStyle=lg(c,0,0,0,180,['#a8dbf5','#e6f4fa']);c.fillRect(0,0,320,180);poly(c,[[0,180],[160,10],[320,180]],'#6A977F');poly(c,[[160,10],[320,180],[190,180]],'rgba(20,50,40,.25)');
+    const px=20+MG.step/MG.need*130+0,py=170-(MG.step/MG.need)*150;c.fillStyle='#F4F4EF';c.beginPath();c.arc(px,py-8,6,0,6.3);c.fill();c.fillStyle='#0F7A5B';c.fillRect(px-5,py-3,10,12);
+    c.strokeStyle='rgba(255,255,255,'+(1-ph)+')';c.lineWidth=3;c.beginPath();c.arc(290,30,8+ph*14,0,6.3);c.stroke();
+    MG.stam=Math.min(1,MG.stam+.0006);const s=document.getElementById('mgs');if(s)s.style.width=MG.stam*100+'%';
+    MG.ph=ph;};
+  MG.raf=requestAnimationFrame(f);
+}
+function hikeTap(side){
+  if(!MG||MG.k!=='hike')return;const m=document.getElementById('mgm'),ph=MG.ph||0,onBeat=ph<.22||ph>.78;
+  if(side===MG.want&&onBeat){MG.step++;MG.want=side==='L'?'R':'L';MG.stam=Math.max(0,MG.stam-.012);chime(400+MG.step*8,.06);
+    if(MG.step===Math.round(MG.need/2)){SAY('Allahu akbar','en-GB');m.textContent='Takbir while going up: Allahu akbar (Sahih al-Bukhari 2993).';}
+    if(MG.step>=MG.need){cancelAnimationFrame(MG.raf);SAY('Subhanallah','en-GB');mgWin(25,'Summit! Coming down we say SubhanAllah (Sahih al-Bukhari 2993). The view is a sign of Allah’s creation.');return;}
+    document.getElementById('mgp').style.width=MG.step/MG.need*100+'%';}
+  else{MG.stam=Math.max(0,MG.stam-.1);m.textContent=side!==MG.want?'Alternate feet: '+(MG.want==='L'?'left':'right')+' now.':'Off the beat. Aman: slow and steady.';buzz(20);
+    if(MG.stam<=0){MG.stam=.4;MG.step=Math.max(0,MG.step-3);m.textContent='You stumbled and slid back. Breathe and keep the rhythm.';document.getElementById('mgp').style.width=MG.step/MG.need*100+'%';}}
+}
+/* football */
+function mgBall(){
+  mgOpen(`<canvas id="mgc" width="320" height="200"></canvas><div id="mgbody"><p id="mgm" class="small">Imteeaz: Tap Shoot when the marker is where you want the ball. 5 penalties.</p><button class="btn primary" id="mgshoot" data-a="shoot">⚽ Shoot</button></div>`);
+  document.getElementById('mgt').textContent='5-a-side with Imteeaz';
+  MG={k:'ball',shots:0,goals:0,t:0,state:'aim',timers:[],keep:1,stop:false,res:''};
+  let last=performance.now();
+  const f=now=>{if(!MG||MG.k!=='ball'||!document.getElementById('mgc'))return;MG.raf=requestAnimationFrame(f);const dt=Math.min(.05,(now-last)/1000);last=now;if(ADHAN)return;MG.t+=dt*(FAST>1?2:1);
+    const c=document.getElementById('mgc').getContext('2d');c.fillStyle=lg(c,0,0,0,200,['#101a3a','#1e6b3c']);c.fillRect(0,0,320,200);c.fillStyle='#2d8a4e';c.fillRect(0,110,320,90);
+    c.fillStyle='#fff8d0';for(const x of[20,300]){c.beginPath();c.arc(x,12,7,0,6.3);c.fill();}
+    c.strokeStyle='#fff';c.lineWidth=4;c.strokeRect(70,50,180,70);c.lineWidth=1;for(let i=0;i<9;i++){c.beginPath();c.moveTo(70+i*22.5,50);c.lineTo(70+i*22.5,120);c.stroke();}
+    const ax=70+90+Math.sin(MG.t*3.2)*88,ay=85+Math.sin(MG.t*2.1)*30;MG.ax=ax;MG.ay=ay;
+    const kx=MG.state==='aim'?160+Math.sin(MG.t*1.5)*20:MG.kx;c.fillStyle='#F2C94C';c.fillRect(kx-10,78,20,36);c.fillStyle='#fff';c.beginPath();c.arc(kx,72,7,0,6.3);c.fill();
+    if(MG.state==='aim'){c.strokeStyle='#ff4d4d';c.lineWidth=2;c.beginPath();c.arc(ax,ay,9,0,6.3);c.moveTo(ax-13,ay);c.lineTo(ax+13,ay);c.moveTo(ax,ay-13);c.lineTo(ax,ay+13);c.stroke();}
+    const bx=MG.state==='shot'?160+(MG.bx-160)*Math.min(1,MG.bt):160,by=MG.state==='shot'?180+(MG.by-180)*Math.min(1,MG.bt):180;if(MG.state==='shot')MG.bt+=dt*3;
+    c.fillStyle='#fff';c.beginPath();c.arc(bx,by,7,0,6.3);c.fill();c.strokeStyle='#222';c.lineWidth=1;c.stroke();
+    c.fillStyle='#fff';c.font='bold 13px sans-serif';c.fillText('Goals '+MG.goals+' / '+MG.shots+'   '+(MG.res||''),10,194);
+    if(MG.state==='shot'&&MG.bt>=1){MG.state='wait';ballResolve();}
+  };
+  MG.raf=requestAnimationFrame(f);
+}
+function ballShoot(){
+  if(!MG||MG.k!=='ball'||MG.state!=='aim'||ADHAN)return;
+  MG.shots++;MG.bx=MG.ax;MG.by=MG.ay;MG.bt=0;MG.state='shot';MG.kx=160+Math.sin(MG.t*1.5)*20;
+  const dive=Math.random()<.45?Math.floor(Math.random()*3):-1,zone=MG.ax<130?0:MG.ax>190?2:1;MG.saved=dive===zone;MG.kx=dive===0?100:dive===2?220:dive===1?MG.kx:MG.kx;MG.off=MG.ay<55||MG.ax<74||MG.ax>246;
+}
+function ballResolve(){
+  if(MG.off)MG.res='Wide!';else if(MG.saved)MG.res='Saved!';else{MG.goals++;MG.res='GOAL!';chime(880,.3);}
+  MG.timers.push(setTimeout(()=>{if(!MG)return;
+    if(MG.shots>=5){mgWin(5+MG.goals*5,'Full time: '+MG.goals+' goals from 5. Imteeaz: good game, brothers. Now let us pray.');return;}
+    MG.res='';MG.state='aim';
+    if(MG.shots===2){document.getElementById('mgm').textContent='The adhan! Imteeaz stops the match at once. Salah first.';const n=curPrayer(clock());adhanOpen(n);}
+  },900/FAST));
+}
+/* food etiquette */
+const FOOD=[
+ ['Jameel serves hot briani. What do you say before the first bite?',['Bismillah','Nothing, I am hungry','Alhamdulillah'],0,'Mention the name of Allah, eat with your right hand and eat from what is near you (Sahih al-Bukhari 5376).'],
+ ['Which hand do you use for dholl puri?',['The right hand','Either hand','The left hand'],0,'Eat with the right hand (Sahih Muslim 2020).'],
+ ['Which part of the shared plate do you eat from?',['What is in front of you','The middle','Wherever the best piece is'],0,'Eat from what is near you (Sahih al-Bukhari 5376).'],
+ ['How much should you eat?',['A third food, a third drink, a third breath','Until stuffed','Only dessert'],0,'The son of Adam fills no vessel worse than his stomach; a third for food, a third for drink and a third for breath (Sunan at-Tirmidhi 2380, hasan).'],
+ ['After the meal you say:',['Alhamdulillah','Nothing','Complain about the salt'],0,'Allah is pleased with the servant who eats a morsel and praises Him for it (Sahih Muslim 2734).']
+];
+function mgFood(){
+  mgOpen(`<div id="mgbody"></div>`);document.getElementById('mgt').textContent='Halal food with Jameel';MG={k:'food',q:0,ok:0,timers:[]};foodRender();
+}
+function foodRender(){
+  const b=document.getElementById('mgbody');if(!b)return;const q=FOOD[MG.q];
+  b.innerHTML=`<div class="small muted">${MG.q+1} / ${FOOD.length}</div><p class="big2">${esc(q[0])}</p>${q[1].map((o,i)=>`<button class="btn" data-a="foodpick" data-v="${i}">${esc(o)}</button>`).join('')}<div id="mgm"></div>`;SAY(q[0]);
+}
+Object.assign(A,{
+  mg(el){const v=el.dataset.v;({fish:mgFish,hike:mgHike,ball:mgBall,food:mgFood})[v]();},
+  mgx(){mgClose();},
+  hk1(el){hikeTap(el.dataset.v);},
+  shoot(){ballShoot();},
+  foodpick(el){if(!MG)return;const q=FOOD[MG.q],i=+el.dataset.v,m=document.getElementById('mgm');
+    if(i===q[2]){MG.ok++;chime(784,.15);}else buzz(40);
+    m.innerHTML=`<p class="${i===q[2]?'good':'bad'}">${i===q[2]?'Correct.':'Not quite.'} ${esc(q[3])}</p><button class="btn primary" data-a="foodnext">${MG.q+1>=FOOD.length?'Finish':'Next'}</button>`;},
+  foodnext(){MG.q++;if(MG.q>=FOOD.length){mgWin(4+MG.ok*3,'Jameel: You know the manners of the table. Barakallahu feek! You answered '+MG.ok+' of '+FOOD.length+'.');}else foodRender();}
+});
+
+if(FAST>1)window.__dr=()=>DR;
 if(!I18N[S.lang])S.lang='en';
 render();
 if(S.visa==='submitted'||S.visa==='review')advanceVisa();

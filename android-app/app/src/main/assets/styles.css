@@ -169,3 +169,10 @@ body.noscroll{overflow:hidden}
 .adhbar.big{height:12px;margin:6px 0}
 .guard{background:#fff1e0;border:2px solid #d9822b;border-radius:12px;padding:10px;margin-top:8px}
 .nafc.done{opacity:.7;background:#eef6f2}.nafc .ar.sm{font-size:20px}.big2{font-size:18px}.good{color:#0b6b3a;font-weight:600}
+.gcv{width:100%;max-width:420px;border-radius:12px;display:block;margin:6px auto;background:#e6f1f6}
+.chip.sel{background:#0f7a5b;color:#fff;border-color:#0f7a5b}
+.vrow{padding:6px 0;border-bottom:1px solid #eee}
+#drv,#mgo{position:fixed;inset:0;z-index:9998;background:rgba(10,24,20,.78);display:grid;place-items:center;padding:12px;overflow:auto}
+.drvbox canvas,#mgo canvas{width:100%;max-width:320px;border-radius:12px;margin:0 auto;display:block}
+#drvgas{min-width:110px;touch-action:none;user-select:none}
+.bad{color:#b3261e}
