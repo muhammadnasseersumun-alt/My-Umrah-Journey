@@ -450,7 +450,7 @@ function lockMsg(k){
 }
 const lockCard=m=>`<div class="card"><h2>${esc(t('locked'))}</h2><p>${esc(m)}</p></div>`;
 function lockSvg(){return '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7V5a4 4 0 118 0v2h1v8H3V7h1zm2 0h4V5a2 2 0 10-4 0v2z"/></svg>';}
-const TABS=()=>['home','world','guide','shop','wallet','pack','travel','miqat','makkah'].concat(S.mode==='hajj'?['hajjDays']:[]).concat(['souks','ziyarat']);
+let TABS=()=>['home','world','guide','shop','wallet','pack','travel','miqat','makkah'].concat(S.mode==='hajj'?['hajjDays']:[]).concat(['souks','ziyarat']);
 
 /* ================= Journey ================= */
 const MILES=()=>[
@@ -2429,6 +2429,225 @@ T3('The story of Yunus','L\'histoire de Yunus','Zistwar Yunus');T3('The story of
 T3('Yunus called out in the darkness: La ilaha illa anta, subhanaka, inni kuntu minaz-zalimin. Allah answered him and saved him from distress.','Yunus appela dans les ténèbres : La ilaha illa anta, subhanaka, inni kuntu minaz-zalimin. Allah lui répondit et le sauva de la détresse.','Yunus finn apel dan tenebr: La ilaha illa anta, subhanaka, inni kuntu minaz-zalimin. Allah finn reponn li ek sov li depi so detres.');
 T3('Hajar ran between Safa and Marwa looking for water for her son Ismail. Allah brought out Zamzam, and we remember her in the sa\'i.','Hajar courut entre Safa et Marwa à la recherche d\'eau pour son fils Ismaïl. Allah fit jaillir Zamzam, et nous nous souvenons d\'elle dans le sa\'i.','Hajar finn galoupe ant Safa ek Marwa pou rod delo pou so garson Ismail. Allah finn fer Zamzam sorti, ek nou rapel li dan sa\'i.');
 T3('Salaam! I am Aman. Before any trip, the Prophet taught us a travel dua. Say it as you board: Subhana alladhi sakhkhara lana hadha.',DT['Salaam! I am Aman. Before any trip, the Prophet taught us a travel dua. Say it as you board: Subhana alladhi sakhkhara lana hadha.'].fr,DT['Salaam! I am Aman. Before any trip, the Prophet taught us a travel dua. Say it as you board: Subhana alladhi sakhkhara lana hadha.'].mfe);
+
+
+/* ================= Phase 2: prayer times, Nawafil, weather, day/night, Adhan ================= */
+const PLAT=-20.1609,PLNG=57.5012,PTZ=4;           // Port Louis, Mauritius (UTC+4)
+const DEG=Math.PI/180,sinD=x=>Math.sin(x*DEG),cosD=x=>Math.cos(x*DEG),tanD=x=>Math.tan(x*DEG);
+const fixH=h=>((h%24)+24)%24,fixA=a=>((a%360)+360)%360;
+function sunPos(jd){const D=jd-2451545,g=fixA(357.529+.98560028*D),q=fixA(280.459+.98564736*D),L=fixA(q+1.915*sinD(g)+.02*sinD(2*g)),e=23.439-.00000036*D,RA=fixH(Math.atan2(cosD(e)*sinD(L),cosD(L))/DEG/15);return {dec:Math.asin(sinD(e)*sinD(L))/DEG,eqt:q/15-RA};}
+function julian(y,m,d){if(m<=2){y-=1;m+=12;}const A_=Math.floor(y/100),B=2-A_+Math.floor(A_/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5;}
+const _ptc={};
+function prayerTimes(y,m,d){
+  const key=y+'-'+m+'-'+d;if(_ptc[key])return _ptc[key];
+  const jd=julian(y,m,d)-PLNG/(15*24),sp=sunPos(jd+.5),mid=fixH(12-sp.eqt);
+  const ang=a=>{const v=(-sinD(a)-sinD(PLAT)*sinD(sp.dec))/(cosD(PLAT)*cosD(sp.dec));return Math.acos(Math.max(-1,Math.min(1,v)))/DEG/15;};
+  const asrA=-Math.atan(1/(1+tanD(Math.abs(PLAT-sp.dec))))/DEG;           // shadow = 1 x object (standard)
+  const z=PTZ-PLNG/15,r={fajr:mid-ang(18),sunrise:mid-ang(.833),dhuhr:mid,asr:mid+ang(asrA),maghrib:mid+ang(.833),isha:mid+ang(17)};
+  for(const k in r)r[k]=fixH(r[k]+z);
+  return _ptc[key]=r;
+}
+const pad2=n=>String(n).padStart(2,'0');
+const hm=h=>{h=fixH(h);let m=Math.round(h*60);const H=Math.floor(m/60)%24;return pad2(H)+':'+pad2(m%60);};
+function mauNow(){const u=new Date(),ms=u.getTime()+PTZ*3600e3,x=new Date(ms);return {y:x.getUTCFullYear(),m:x.getUTCMonth()+1,d:x.getUTCDate(),h:x.getUTCHours()+x.getUTCMinutes()/60+x.getUTCSeconds()/3600};}
+const hourQ=(()=>{const m=/[?&]h=([\d.]+)/.exec(location.search);return m?+m[1]:null;})();
+function clock(){const n=mauNow();if(hourQ!=null)n.h=hourQ;if(S.simH!=null)n.h=S.simH;return n;}
+const dayKey=n=>n.y+'-'+n.m+'-'+n.d;
+const PRAY=['fajr','dhuhr','asr','maghrib','isha'];
+const PNAME={fajr:'Fajr',sunrise:'Sunrise',dhuhr:'Dhuhr',asr:'Asr',maghrib:'Maghrib',isha:'Isha'};
+const PAR={fajr:'الفجر',dhuhr:'الظهر',asr:'العصر',maghrib:'المغرب',isha:'العشاء'};
+function curPrayer(n){const T=prayerTimes(n.y,n.m,n.d);let c='isha';for(const k of PRAY)if(n.h>=T[k])c=k;if(n.h<T.fajr)c='isha';return c;}
+function nextPrayer(n){const T=prayerTimes(n.y,n.m,n.d);for(const k of PRAY)if(T[k]>n.h)return {k,h:T[k],in:T[k]-n.h};const T2=prayerTimes(n.y,n.m,n.d);return {k:'fajr',h:T2.fajr,in:24-n.h+T2.fajr};}
+const fmtIn=h=>{const m=Math.max(0,Math.round(h*60));return Math.floor(m/60)+'h '+pad2(m%60)+'m';};
+/* the three forbidden times (Sahih Muslim 831): sunrise until the sun has risen, zenith, sunset */
+function makruh(n){const T=prayerTimes(n.y,n.m,n.d),x=n.h;
+  if(x>=T.sunrise&&x<T.sunrise+.25)return 'sunrise';
+  if(x>=T.dhuhr-.1&&x<T.dhuhr)return 'zenith';
+  if(x>=T.maghrib-.25&&x<T.maghrib)return 'sunset';
+  return '';}
+/* daylight 0..1 with smooth twilight */
+function daylight(n){const T=prayerTimes(n.y,n.m,n.d),x=n.h,s=.7;
+  const up=Math.max(0,Math.min(1,(x-(T.sunrise-.5))/1)),dn=Math.max(0,Math.min(1,((T.maghrib+.5)-x)/1));
+  return x<12?up:dn;}
+
+/* ---------- weather ---------- */
+const WXK=['sun','mist','rain','thunder'];
+const WXI={sun:'☀️',mist:'🌫️',rain:'🌧️',thunder:'⛈️'};
+const WXN={sun:'Tropical sunshine',mist:'Highland mist',rain:'Tropical rain',thunder:'Thunderstorm'};
+const WXD={
+  rain:{ar:'اللَّهُمَّ صَيِّبًا نَافِعًا',tl:'Allahumma sayyiban nafi‘an',en:'O Allah, let it be a beneficial rain.',s:'Sahih al-Bukhari 1032'},
+  thunder:{ar:'سُبْحَانَ الَّذِي يُسَبِّحُ الرَّعْدُ بِحَمْدِهِ وَالْمَلَائِكَةُ مِنْ خِيفَتِهِ',tl:'Subhana alladhi yusabbihu ar-ra‘du bihamdihi wal-mala’ikatu min khifatih',en:'Glory to Him whom the thunder glorifies with His praise, and the angels out of awe of Him.',s:'Muwatta Malik, reported from ‘Abdullah ibn al-Zubayr; and Quran 13:13'}
+};
+const WX={k:'sun',t:0,next:60+Math.random()*50,flash:0,drops:null,auto:true};
+function wxSet(k,manual){
+  if(WX.k===k)return;WX.k=k;WX.t=0;if(manual)WX.auto=false;
+  if(WXD[k]){toast(WXI[k]+' '+WXD[k].tl);const el=document.getElementById('wxdua');if(el)el.innerHTML=wxDuaHtml();
+    if(tab==='world'&&!WS.dlg)speak(WXD[k].ar,'ar-SA',.8,'m');}
+  wxHud();
+}
+const wxDuaHtml=()=>WXD[WX.k]?`<div class="wxdua"><div class="ar" dir="rtl">${WXD[WX.k].ar}</div><div class="muted small">${esc(WXD[WX.k].tl)} · ${esc(WXD[WX.k].en)} (${esc(WXD[WX.k].s)})</div></div>`:'';
+function wxUpdate(dt){
+  if(WX.auto){WX.t+=dt;if(WX.t>WX.next){const r=Math.random();wxSet(r<.45?'sun':r<.6?'mist':r<.88?'rain':'thunder');WX.auto=true;WX.next=45+Math.random()*60;}}
+  if(WX.k==='thunder'){WX.flash-=dt;if(WX.flash<-3-Math.random()*5)WX.flash=.25;}else WX.flash=0;
+}
+function wxOverlay(ctx){
+  const {cw,ch,dpr}=WS;ctx.setTransform(dpr,0,0,dpr,0,0);
+  const n=clock(),dl=daylight(n),T=prayerTimes(n.y,n.m,n.d);
+  // twilight warmth at dawn and dusk
+  const nearSun=Math.min(Math.abs(n.h-T.sunrise),Math.abs(n.h-T.maghrib));
+  if(nearSun<.9&&dl>.05){ctx.fillStyle='rgba(255,140,60,'+(.22*(1-nearSun/.9))+')';ctx.fillRect(0,0,cw,ch);}
+  // night
+  if(dl<1){ctx.fillStyle='rgba(6,12,52,'+(.62*(1-dl))+')';ctx.fillRect(0,0,cw,ch);
+    if(dl<.5){const a=(.5-dl)*2;ctx.fillStyle='rgba(255,255,235,'+a+')';for(let i=0;i<46;i++){const sx=(i*97)%cw,sy=(i*53)%(ch*.32),tw=.6+.4*Math.sin(WS.t*2+i);ctx.globalAlpha=a*tw;ctx.fillRect(sx,sy,1.6,1.6);}ctx.globalAlpha=1;
+      ctx.fillStyle='rgba(250,246,214,'+a+')';ctx.beginPath();ctx.arc(cw*.82,ch*.12,13,0,6.3);ctx.fill();ctx.fillStyle='rgba(20,30,70,'+a*.9+')';ctx.beginPath();ctx.arc(cw*.82+6,ch*.12-3,11,0,6.3);ctx.fill();}}
+  // weather
+  if(WX.k==='mist'){ctx.fillStyle=lg(ctx,0,0,0,ch,['rgba(235,240,243,.55)','rgba(235,240,243,.8)','rgba(235,240,243,.55)']);ctx.fillRect(0,0,cw,ch);
+    ctx.fillStyle='rgba(255,255,255,.28)';for(let i=0;i<5;i++){const x=((WS.t*14+i*180)%(cw+240))-120;ctx.beginPath();ctx.ellipse(x,ch*(.25+i*.14),120,22,0,0,6.3);ctx.fill();}}
+  if(WX.k==='rain'||WX.k==='thunder'){
+    ctx.fillStyle=WX.k==='thunder'?'rgba(25,32,50,.5)':'rgba(70,86,104,.28)';ctx.fillRect(0,0,cw,ch);
+    ctx.strokeStyle='rgba(205,225,245,.65)';ctx.lineWidth=1.3;ctx.beginPath();
+    const cnt=WX.k==='thunder'?130:90;for(let i=0;i<cnt;i++){const sp=520+(i%7)*50,x=((i*61+WS.t*70)%(cw+60))-30,y=((i*37+WS.t*sp)%(ch+40))-20;ctx.moveTo(x,y);ctx.lineTo(x-4,y+13);}
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.18)';for(let i=0;i<10;i++){const x=(i*83+WS.t*30)%cw,y=ch*.7+((i*29)%(ch*.3)),s=(WS.t*3+i)%1;ctx.beginPath();ctx.ellipse(x,y,2+s*7,.8+s*2,0,0,6.3);ctx.fill();}
+    if(WX.k==='thunder'&&WX.flash>0){ctx.fillStyle='rgba(255,255,245,'+Math.min(.7,WX.flash*2.4)+')';ctx.fillRect(0,0,cw,ch);
+      ctx.strokeStyle='rgba(255,255,230,.95)';ctx.lineWidth=2.5;ctx.beginPath();let x=cw*(.25+((WS.t*7)%1)*.5),y=0;ctx.moveTo(x,y);for(let i=0;i<7;i++){x+=(Math.sin(i*5.1+WS.t)*18);y+=ch*.09;ctx.lineTo(x,y);}ctx.stroke();}}
+  if(WX.k==='sun'&&dl>.9){ctx.fillStyle='rgba(255,246,200,.07)';ctx.beginPath();ctx.moveTo(cw*.78,0);ctx.lineTo(cw,0);ctx.lineTo(cw*.5,ch);ctx.lineTo(cw*.3,ch);ctx.fill();}
+}
+const worldDraw0=worldDraw;
+worldDraw=function(ctx){worldDraw0(ctx);wxOverlay(ctx);};
+const worldUpdate0=worldUpdate;
+worldUpdate=function(dt){wxUpdate(dt);worldUpdate0(dt);};
+
+/* ---------- world HUD ---------- */
+function hudHtml(){
+  const n=clock(),T=prayerTimes(n.y,n.m,n.d),cp=curPrayer(n),np=nextPrayer(n),mk=makruh(n);
+  return `<div class="phud" id="phud"><div class="row between"><b>🕒 <span id="hclk">${hm(n.h)}</span> · Port Louis</b><span class="tag" id="hwx">${WXI[WX.k]} ${esc(WXN[WX.k])}</span></div>
+  <div class="small" id="hpr">${esc(PNAME[cp])} window · next ${esc(PNAME[np.k])} ${hm(np.h)} (in ${fmtIn(np.in)})${mk?` · <b class="bad">Forbidden time for nafil (${esc(mk)})</b>`:''}</div>
+  <div class="row wrap"><button class="chip" data-a="adhanNow">🔔 Adhan</button><button class="chip" data-a="simNext">⏭ Next prayer</button><button class="chip" data-a="simLive">Live time</button>
+  ${WXK.map(k=>`<button class="chip" data-a="wx" data-v="${k}" aria-label="${esc(WXN[k])}">${WXI[k]}</button>`).join('')}</div><div id="wxdua">${wxDuaHtml()}</div></div>`;
+}
+const vWorld0=vWorld;
+VIEWS.world=function(){return vWorld0().replace('<div class="worldwrap">',hudHtml()+'<div class="worldwrap">');};
+function wxHud(){const e=document.getElementById('hwx');if(e)e.textContent=WXI[WX.k]+' '+WXN[WX.k];const d=document.getElementById('wxdua');if(d)d.innerHTML=wxDuaHtml();}
+function hudTick(){
+  const n=clock(),e=document.getElementById('hclk');if(!e)return;
+  const cp=curPrayer(n),np=nextPrayer(n),mk=makruh(n);
+  e.textContent=hm(n.h);
+  const p=document.getElementById('hpr');if(p)p.innerHTML=`${esc(PNAME[cp])} window · next ${esc(PNAME[np.k])} ${hm(np.h)} (in ${fmtIn(np.in)})${mk?` · <b class="bad">Forbidden time for nafil (${esc(mk)})</b>`:''}`;
+}
+
+/* ---------- Adhan stop ---------- */
+const ADH=[
+ ['اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ','Allahu akbar, Allahu akbar','Say the same after him.'],
+ ['اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ','Allahu akbar, Allahu akbar','Say the same after him.'],
+ ['أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ','Ash-hadu an la ilaha illallah','Say the same after him.'],
+ ['أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللَّهِ','Ash-hadu anna Muhammadan rasulullah','Say the same after him.'],
+ ['حَيَّ عَلَى الصَّلَاةِ','Hayya ‘alas-salah','Reply: La hawla wa la quwwata illa billah.'],
+ ['حَيَّ عَلَى الْفَلَاحِ','Hayya ‘alal-falah','Reply: La hawla wa la quwwata illa billah.'],
+ ['اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ','Allahu akbar, Allahu akbar','Say the same after him.'],
+ ['لَا إِلَهَ إِلَّا اللَّهُ','La ilaha illallah','Say the same after him.']
+];
+const ADUA={ar:'اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ وَالصَّلَاةِ الْقَائِمَةِ آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذِي وَعَدْتَهُ',tl:'Allahumma rabba hadhihi-d-da‘wati-t-tammah, was-salati-l-qa’imah, ati Muhammadani-l-wasilata wal-fadilah, wab‘athhu maqaman mahmudan alladhi wa‘adtah'};
+let ADHAN=null,ADT=[];
+function adhanLines(k){const L=ADH.slice();if(k==='fajr')L.splice(6,0,['الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ','As-salatu khayrun minan-nawm','Say the same after him.']);return L;}
+function adhanOpen(k){
+  if(ADHAN||(typeof SCN!=='undefined'&&SCN.cur))return;
+  WS.joy=null;KEYS.clear();speechCancel();
+  ADHAN={k,i:0,done:false,lines:adhanLines(k)};
+  const d=document.createElement('div');d.id='adh';document.body.appendChild(d);adhanRender();adhanRun();
+}
+function adhanRun(){
+  ADT.forEach(clearTimeout);ADT=[];if(!ADHAN)return;
+  const step=()=>{if(!ADHAN)return;if(ADHAN.i>=ADHAN.lines.length){ADHAN.i=ADHAN.lines.length;ADHAN.done=true;adhanRender();speak(ADUA.ar,'ar-SA',.8,'m');return;}
+    adhanRender();const l=ADHAN.lines[ADHAN.i];speak(l[0],'ar-SA',.7,'m');ADT.push(setTimeout(()=>{if(ADHAN){ADHAN.i++;step();}},Math.max(2600,l[0].length*150)/FAST));};
+  step();
+}
+function adhanRender(){
+  const d=document.getElementById('adh');if(!d||!ADHAN)return;const {k,i,done,lines}=ADHAN,l=lines[Math.min(i,lines.length-1)];
+  d.innerHTML=`<div class="adhbox"><div class="adhtop">🕌 ${esc(PNAME[k])} · ${esc(PAR[k]||'')}</div><div class="small muted">The adhan is called. Stop what you are doing, listen, and reply as the Sunnah teaches. (Voice read aloud by text-to-speech, not a recording.)</div>
+  ${done?`<div class="ar" dir="rtl">${ADUA.ar}</div><div class="small">${esc(ADUA.tl)}</div><div class="small muted">After the adhan, send blessings upon the Prophet ﷺ, then say this du‘a (Sahih al-Bukhari 614). Reply to the muadhdhin: Sahih Muslim 384, 385.</div>`
+  :`<div class="ar" dir="rtl">${l[0]}</div><div class="small">${esc(l[1])}</div><div class="small adhrep">${esc(l[2])}</div><div class="adhbar"><i style="width:${Math.round(i/lines.length*100)}%"></i></div>`}
+  <div class="row"><button class="btn primary" data-a="adhanGo">${done?'Go to the masjid':'Go to the masjid now'}</button><button class="btn" data-a="adhanStop">${done?'Close':'Stop'}</button></div></div>`;
+}
+function adhanClose(go){
+  ADT.forEach(clearTimeout);ADT=[];speechCancel();const wasDone=ADHAN&&ADHAN.done,k=ADHAN&&ADHAN.k;ADHAN=null;const d=document.getElementById('adh');if(d)d.remove();
+  const n=clock();S.adh=S.adh||{};if(wasDone&&!S.adh[dayKey(n)+k]){S.adh[dayKey(n)+k]=1;S.credits+=5;save();toast('+5 '+t('credits')+' (answered the adhan)');chime(784,.25);const c=$('#credits');if(c)c.textContent=S.credits+' '+t('credits');}
+  if(go){goTab('world');setTimeout(()=>{const m=NPCL.find(x=>x.id==='imam');toast('Walk to the masjid door');},50);}
+}
+let _lastH=null,_lastDay=null;
+function prayerCheck(){
+  if(!S.setup||ADHAN||(typeof SCN!=='undefined'&&SCN.cur))return;
+  const n=clock(),T=prayerTimes(n.y,n.m,n.d),dk=dayKey(n);
+  if(_lastDay!==dk){_lastDay=dk;_lastH=n.h;return;}
+  const live=S.simH==null&&hourQ==null;
+  for(const k of PRAY){if(_lastH!=null&&_lastH<T[k]&&n.h>=T[k]&&n.h-_lastH<.1){_lastH=n.h;adhanOpen(k);return;}}
+  _lastH=n.h;
+}
+setInterval(()=>{try{hudTick();prayerCheck();}catch(e){}},1000);
+
+/* ---------- 36 Nawafil challenge ---------- */
+const NAF=[
+ {id:'tah',n:'Tahiyyat al-Masjid',ar:'تحية المسجد',r:2,s:'Sahih al-Bukhari 1163',d:'Two rak‘ahs on entering the masjid, before sitting.'},
+ {id:'duha',n:'Salat ad-Duha / Ishraq',ar:'صلاة الضحى',r:8,s:'Sahih Muslim 720',d:'From shortly after sunrise until just before the sun is at its zenith. Two to eight rak‘ahs; eight here.',win:'duha'},
+ {id:'taw',n:'Salat at-Tawbah',ar:'صلاة التوبة',r:2,s:'Sunan Abi Dawud 1521',d:'Make wudhu well, pray two rak‘ahs, then seek forgiveness.'},
+ {id:'haj',n:'Salat al-Hajah',ar:'صلاة الحاجة',r:2,s:'Sunan at-Tirmidhi 479',d:'Two rak‘ahs for a need. Note: scholars of hadith discuss the strength of this narration; ask a qualified scholar.'},
+ {id:'saf',n:'Salat as-Safar (on returning)',ar:'صلاة القدوم من السفر',r:2,s:'Sahih Muslim 716',d:'The Prophet ﷺ used to pray two rak‘ahs in the masjid on returning from a journey.'},
+ {id:'raw',n:'Sunan Rawatib (12 daily)',ar:'السنن الرواتب',r:12,s:'Sahih Muslim 728',d:'Four before Dhuhr, two after Dhuhr, two after Maghrib, two after Isha, two before Fajr: a house is built in Paradise.'},
+ {id:'tah2',n:'Tahajjud / Qiyam al-Layl',ar:'قيام الليل',r:8,s:'Sahih Muslim 1163',d:'After Isha and before Fajr, ideally in the last third of the night. Two to eight rak‘ahs; eight here.',win:'night'}
+];
+const NAF_TOTAL=NAF.reduce((a,x)=>a+x.r,0);   // 36
+const nafToday=()=>{const k=dayKey(clock());if(!S.naf||S.naf.day!==k)S.naf={day:k,done:{}};return S.naf;};
+const nafCount=()=>{const d=nafToday().done;return NAF.reduce((a,x)=>a+(d[x.id]?x.r:0),0);};
+function nafWinOk(x,n){const T=prayerTimes(n.y,n.m,n.d);
+  if(x.win==='duha')return n.h>=T.sunrise+.25&&n.h<T.dhuhr-.1;
+  if(x.win==='night')return n.h>=T.isha||n.h<T.fajr;
+  return true;}
+const MKN={sunrise:'the sun is rising',zenith:'the sun is at its zenith',sunset:'the sun is setting'};
+function vNaw(){
+  const n=clock(),mk=makruh(n),T=prayerTimes(n.y,n.m,n.d),c=nafCount(),d=nafToday().done;
+  return `<div class="card"><div class="row between"><h1>36 Nawafil</h1><span class="tag">${c}/${NAF_TOTAL} rak‘ahs</span></div>
+  <div class="adhbar big"><i style="width:${Math.round(c/NAF_TOTAL*100)}%"></i></div>
+  <p class="muted">Imam Irfaan oversees the daily challenge: 36 voluntary rak‘ahs after the five obligatory prayers. Port Louis time now <b>${hm(n.h)}</b>. Fajr ${hm(T.fajr)} · Sunrise ${hm(T.sunrise)} · Dhuhr ${hm(T.dhuhr)} · Asr ${hm(T.asr)} · Maghrib ${hm(T.maghrib)} · Isha ${hm(T.isha)}.</p>
+  <div class="row wrap"><label class="small">Try another time of day <input type="range" min="0" max="23.9" step="0.1" value="${n.h.toFixed(1)}" id="simr" aria-label="Time of day"></label><button class="chip" data-a="simLive">Live time</button></div>
+  ${mk?`<div class="guard"><b>Forbidden time (Auqat al-Makruh)</b><p>Now ${esc(MKN[mk])}. The Prophet ﷺ forbade praying at this time (Sahih Muslim 831). Do not start a nafil prayer now. Use it for dhikr, Quran or durood sharif instead.</p><div class="row wrap"><button class="btn" data-a="nafdhikr" data-v="dhikr">Dhikr: SubhanAllah</button><button class="btn" data-a="nafdhikr" data-v="durood">Durood sharif</button><button class="btn" data-a="nafdhikr" data-v="quran">Read Quran</button></div></div>`:''}
+  </div>`+NAF.map(x=>{const ok=nafWinOk(x,n),done=!!d[x.id];
+    return `<div class="card nafc${done?' done':''}"><div class="row between"><div><b>${esc(x.n)}</b> <span class="muted">· ${x.r} rak‘ahs</span></div><span class="ar sm" dir="rtl">${x.ar}</span></div>
+    <p class="small">${esc(x.d)}</p><div class="src">${esc(t('source'))}: ${esc(x.s)}</div>
+    ${done?'<div class="good">Done today. Barakallahu feek.</div>':`<button class="btn primary" data-a="nafpray" data-v="${x.id}"${mk||!ok?' disabled':''}>${mk?'Not now (forbidden time)':ok?'Pray now':'Not in its time yet'}</button>`}</div>`;}).join('');
+}
+VIEWS.nawafil=vNaw;
+I18N.en.nawafil='Nawafil';
+const _TB=TABS;
+TABS=()=>{const a=_TB();const i=a.indexOf('world');a.splice(i+1,0,'nawafil');return a;};
+/* prayer sheet */
+let NP=null;
+const RK_STEPS=['Intention in your heart, raise your hands and say Allahu Akbar.','Recite Al-Fatihah and a surah.','Ruku’: Subhana Rabbiyal ‘Adhim (three times).','Rise: Sami’ Allahu liman hamidah, Rabbana lakal hamd.','Sujud: Subhana Rabbiyal A’la (three times).','Sit briefly, then the second sujud.'];
+function nafOpen(id){
+  const x=NAF.find(y=>y.id===id);if(!x)return;
+  NP={x,r:1,s:0};const d=document.createElement('div');d.id='nps';document.body.appendChild(d);nafRender();
+}
+function nafRender(){
+  const d=document.getElementById('nps');if(!d||!NP)return;const {x,r,s}=NP,fin=r>x.r;
+  d.innerHTML=`<div class="adhbox"><div class="adhtop">${esc(x.n)} <span class="ar sm" dir="rtl">${x.ar}</span></div>
+  ${fin?`<div class="big">✅</div><p>You prayed ${x.r} rak‘ahs. Tasleem: As-salamu ‘alaykum wa rahmatullah, to the right and left. Then make dhikr and du‘a.</p><button class="btn primary" data-a="nafdone">Complete +${x.r+2} credits</button>`
+  :`<div class="small muted">Rak‘ah ${r} of ${x.r}${r%2===0||r===x.r?' (sit for tashahhud and salam at the end of this one)':''}</div><div class="adhbar"><i style="width:${Math.round(((r-1)*6+s)/(x.r*6)*100)}%"></i></div>
+  <p class="big2">${esc(RK_STEPS[s])}</p><div class="row"><button class="btn primary" data-a="nafnext">${r===x.r&&s===RK_STEPS.length-1?'Finish with salam':'Next'}</button><button class="btn" data-a="nafquit">Stop</button></div>`}</div>`;
+}
+Object.assign(A,{
+  wx(el){wxSet(el.dataset.v,true);},
+  adhanNow(){adhanOpen(curPrayer(clock()));},
+  adhanStop(){adhanClose(false);},
+  adhanGo(){adhanClose(true);},
+  simNext(){const n=clock(),np=nextPrayer(n);S.simH=np.h-.0005;save();_lastDay=dayKey(clock());_lastH=S.simH-.01;setTimeout(()=>{S.simH=np.h+.002;prayerCheck();hudTick();},30);},
+  simLive(){S.simH=null;save();_lastH=null;if(tab==='nawafil')render();hudTick();},
+  nafpray(el){const x=NAF.find(y=>y.id===el.dataset.v),n=clock();if(makruh(n)){toast('Forbidden time. Do dhikr instead.');return;}if(!nafWinOk(x,n)){toast('Not in its time yet.');return;}nafOpen(el.dataset.v);},
+  nafnext(){if(!NP)return;NP.s++;if(NP.s>=RK_STEPS.length){NP.s=0;NP.r++;}nafRender();chime(520,.1);},
+  nafquit(){NP=null;const d=document.getElementById('nps');if(d)d.remove();},
+  nafdone(){const x=NP.x;nafToday().done[x.id]=1;S.credits+=x.r+2;save();chime(784,.25);toast('+'+(x.r+2)+' '+t('credits'));A.nafquit();render();},
+  nafdhikr(el){const v=el.dataset.v,m={dhikr:['سُبْحَانَ اللَّهِ وَبِحَمْدِهِ','SubhanAllahi wa bihamdih'],durood:['اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ','Allahumma salli ‘ala Muhammadin wa ‘ala ali Muhammad'],quran:['قُلْ هُوَ اللَّهُ أَحَدٌ','Qul huwa Allahu ahad (Al-Ikhlas)']}[v];speak(m[0],'ar-SA',.75,'m');toast(m[1]);S.credits+=1;save();const c=$('#credits');if(c)c.textContent=S.credits+' '+t('credits');}
+});
+document.addEventListener('input',e=>{if(e.target.id==='simr'){S.simH=+e.target.value;save();_lastH=S.simH;}});
+document.addEventListener('change',e=>{if(e.target.id==='simr'){render();}});
 
 if(!I18N[S.lang])S.lang='en';
 render();
